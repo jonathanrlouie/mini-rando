@@ -1,1 +1,1 @@
-pub mod item_shuffler;
+pub mod item;
