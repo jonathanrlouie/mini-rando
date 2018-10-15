@@ -1,6 +1,7 @@
-use rand::{Rng, StdRng};
-use super::item::{LabelledItem};
-use super::location::{Location};
+use super::{
+    item::{LabelledItem},
+    location::{Location}
+};
 
 #[derive(Debug, PartialEq)]
 pub struct FilledLocation(pub LabelledItem, pub Location);
@@ -9,16 +10,11 @@ pub struct FilledLocation(pub LabelledItem, pub Location);
 struct ProgressionFillerResult(Vec<FilledLocation>, Vec<Location>);
 
 pub fn fill_locations(
-    mut rng: StdRng,
-    mut locations: Vec<Location>,
-    mut prog_items: Vec<LabelledItem>,
-    mut other_items: Vec<LabelledItem>
+    locations: Vec<Location>,
+    prog_items: Vec<LabelledItem>,
+    other_items: Vec<LabelledItem>
 ) -> Vec<FilledLocation> {
     debug_assert!(locations.len() == prog_items.len() + other_items.len());
-
-    rng.shuffle(&mut prog_items);
-    rng.shuffle(&mut locations);
-    rng.shuffle(&mut other_items);
 
     let ProgressionFillerResult(mut filled_locs, remaining_locs): ProgressionFillerResult =
         progression_filler(prog_items, locations);
@@ -50,6 +46,10 @@ fn progression_filler(
                 .into_iter()
                 .filter(|&loc| loc != chosen_location)
                 .collect();
+        } else if let (None, Some(chosen_location)) = (option_item, option_location) {
+            panic!("Out of items");
+        } else {
+            panic!("Out of locations");
         }
     }
 
@@ -69,11 +69,11 @@ fn fast_filler(items: Vec<LabelledItem>, locations: Vec<Location>) -> Vec<Filled
 mod tests {
     use super::*;
     use super::super::item::Item;
-    use rand::SeedableRng;
+    use rand::{Rng, StdRng, SeedableRng};
 
     #[test]
     fn filler_test() {
-        let locations: Vec<Location> = vec![
+        let mut locations: Vec<Location> = vec![
             Location::Location0,
             Location::Location1,
             Location::Location2,
@@ -82,23 +82,26 @@ mod tests {
             Location::Location5
         ];
 
-        let prog_items: Vec<LabelledItem> = vec![
+        let mut prog_items: Vec<LabelledItem> = vec![
             LabelledItem::Progression(Item::Item0),
             LabelledItem::Progression(Item::Item1),
             LabelledItem::Progression(Item::Item2)
         ];
 
-        let junk_items: Vec<LabelledItem> = vec![
+        let mut junk_items: Vec<LabelledItem> = vec![
             LabelledItem::Junk(Item::Item3),
             LabelledItem::Junk(Item::Item3),
             LabelledItem::Junk(Item::Item3)
         ];
 
-        let rng: StdRng = StdRng::from_seed([0u8; 32]);
+        let mut rng: StdRng = StdRng::from_seed([0u8; 32]);
+
+        rng.shuffle(&mut prog_items);
+        rng.shuffle(&mut locations);
+        rng.shuffle(&mut junk_items);
 
         let filled_locations =
             fill_locations(
-                rng,
                 locations,
                 prog_items,
                 junk_items);
@@ -107,14 +110,10 @@ mod tests {
 
         assert!(!filled_locations
             .iter()
-            .any(|filled_loc| filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location0)));
-
-        assert!(!filled_locations
-            .iter()
-            .any(|filled_loc| filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location1)));
-
-        assert!(!filled_locations
-            .iter()
-            .any(|filled_loc| filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item1), Location::Location1)));
+            .any(|filled_loc|
+                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location0) ||
+                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location1) ||
+                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item1), Location::Location1)
+            ));
     }
 }
