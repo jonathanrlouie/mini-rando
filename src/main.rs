@@ -1,6 +1,7 @@
 extern crate amethyst;
 extern crate tiled;
 extern crate rand;
+extern crate linked_hash_set;
 
 mod randomizer;
 mod states;
@@ -13,7 +14,8 @@ use amethyst::{
     renderer::{
         DrawFlat,
         PosTex
-    }
+    },
+    input::InputBundle
 };
 use states::mini_rando::MiniRando;
 
@@ -27,9 +29,20 @@ fn main() -> amethyst::Result<()> {
         env!("CARGO_MANIFEST_DIR")
     );
 
+    let key_bindings_path = {
+            format!(
+                "{}/resources/input.ron",
+                env!("CARGO_MANIFEST_DIR")
+            )
+
+    };
+
     let assets_dir = format!("{}/resources", env!("CARGO_MANIFEST_DIR"));
 
     let game_data = GameDataBuilder::default()
+        .with_bundle(
+            InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?
+        )?
         .with_basic_renderer(display_config_path, DrawFlat::<PosTex>::new(), true)?;
 
     let mut game = Application::build(assets_dir, MiniRando)?
