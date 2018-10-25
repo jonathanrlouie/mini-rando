@@ -1,15 +1,15 @@
 use linked_hash_set::LinkedHashSet;
 use std::iter::FromIterator;
 use super::{
-    item::{LabelledItem},
-    location::{Location, IsAccessible, LocId}
+    item::LabelledItem,
+    location::Location
 };
 
 #[derive(Debug, PartialEq)]
-pub struct FilledLocation(pub LabelledItem, pub LocId);
+pub struct FilledLocation(pub LabelledItem, pub Location);
 
 // Contains filled locations and remaining empty locations
-struct ProgressionFillerResult<'a>(Vec<FilledLocation>, LinkedHashSet<Location<'a>>);
+struct ProgressionFillerResult(Vec<FilledLocation>, LinkedHashSet<Location>);
 
 pub fn fill_locations(
     locations: Vec<Location>,
@@ -50,11 +50,11 @@ fn progression_filler(
         let option_item = prog_items.pop();
         locations = locations
             .into_iter()
-            .filter(|&Location(_, IsAccessible(is_accessible))| is_accessible(&prog_items))
+            .filter(|&loc| loc.is_accessible(&prog_items))
             .collect();
         let option_location = locations.pop_front();
         if let (Some(item), Some(chosen_location)) = (option_item, option_location) {
-            filled_locations.push(FilledLocation(item, chosen_location.0));
+            filled_locations.push(FilledLocation(item, chosen_location));
             remaining_locations.remove(&chosen_location);
         } else if option_item.is_none() {
             panic!("Out of items");
@@ -71,7 +71,7 @@ fn fast_filler(items: Vec<LabelledItem>, locations: LinkedHashSet<Location>) -> 
     items
         .into_iter()
         .zip(locations)
-        .map(|(item, Location(loc_id, _))| FilledLocation(item, loc_id))
+        .map(|(item, loc)| FilledLocation(item, loc))
         .collect()
 }
 
@@ -79,12 +79,11 @@ fn fast_filler(items: Vec<LabelledItem>, locations: LinkedHashSet<Location>) -> 
 mod tests {
     use super::*;
     use super::super::item::Item;
-    use super::super::location::{LocId, IsAccessible, has_item};
+    use super::super::location::*;
     use rand::{Rng, StdRng, SeedableRng};
 
     #[test]
     fn filler_test() {
-        /*
         let mut locations: Vec<Location> = vec![
             Location::Location0,
             Location::Location1,
@@ -92,16 +91,6 @@ mod tests {
             Location::Location3,
             Location::Location4,
             Location::Location5,
-        ];*/
-
-        let mut locations: Vec<Location> = vec![
-            Location(LocId(0), IsAccessible(&|items| has_item(items, LabelledItem::Progression(Item::Item0)))),
-            Location(LocId(1), IsAccessible(&|items| has_item(items, LabelledItem::Progression(Item::Item0)) &&
-                has_item(items, LabelledItem::Progression(Item::Item1)))),
-            Location(LocId(2), IsAccessible(&|items| true)),
-            Location(LocId(3), IsAccessible(&|items| true)),
-            Location(LocId(4), IsAccessible(&|items| true)),
-            Location(LocId(5), IsAccessible(&|items| true))
         ];
 
         let mut prog_items: Vec<LabelledItem> = vec![
@@ -133,9 +122,9 @@ mod tests {
         assert!(!filled_locations
             .iter()
             .any(|filled_loc|
-                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), LocId(0)) ||
-                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), LocId(1)) ||
-                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item1), LocId(1))
+                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location0) ||
+                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location1) ||
+                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item1), Location::Location1)
             ));
     }
 }
