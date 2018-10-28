@@ -4,7 +4,6 @@ use super::{
     item::LabelledItem,
     location::*
 };
-use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
 pub struct FilledLocation(pub LabelledItem, pub Location);
