@@ -1,5 +1,6 @@
 use amethyst::{
     prelude::*,
+    ui::UiCreator
 };
 
 pub struct MainMenu;

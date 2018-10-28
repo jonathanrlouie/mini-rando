@@ -1,29 +1,43 @@
 use super::item::{Item, LabelledItem};
+use std::hash::{Hash, Hasher};
+use std::fmt;
+use std::rc::Rc;
+
+pub struct IsAccessible(pub Box<Fn(&[LabelledItem]) -> bool>);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub enum Location {
-    Location0,
-    Location1,
-    Location2,
-    Location3,
-    Location4,
-    Location5
+pub struct LocId(pub u64);
+
+impl fmt::Display for LocId {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
 }
 
-impl Location {
-    // items is the list of assumed accessible items
-    pub fn is_accessible(&self, items: &[LabelledItem]) -> bool {
-        match self {
-            Location::Location0 => has_item(items, LabelledItem::Progression(Item::Item0)),
-            Location::Location1 => {
-                has_item(items, LabelledItem::Progression(Item::Item0)) &&
-                has_item(items, LabelledItem::Progression(Item::Item1))
-            },
-            Location::Location2 => true,
-            Location::Location3 => true,
-            Location::Location4 => true,
-            Location::Location5 => true
-        }
+#[derive(Clone)]
+pub struct Location(pub LocId, pub Rc<IsAccessible>);
+
+impl PartialEq for Location {
+    fn eq(&self, other: &Location) -> bool {
+        let Location(loc_id, _) = *self;
+        let Location(other_loc_id, _) = *other;
+        loc_id == other_loc_id
+    }
+}
+
+impl Eq for Location {}
+
+impl Hash for Location {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        let Location(loc_id, _) = *self;
+        loc_id.hash(state);
+    }
+}
+
+impl fmt::Debug for Location {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        let Location(loc_id, _) = *self;
+        write!(f, "Location {{ loc_id: {} }}", loc_id)
     }
 }
 

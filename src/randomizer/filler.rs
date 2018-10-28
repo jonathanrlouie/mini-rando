@@ -2,8 +2,9 @@ use linked_hash_set::LinkedHashSet;
 use std::iter::FromIterator;
 use super::{
     item::LabelledItem,
-    location::Location
+    location::*
 };
+use std::rc::Rc;
 
 #[derive(Debug, PartialEq)]
 pub struct FilledLocation(pub LabelledItem, pub Location);
@@ -50,11 +51,11 @@ fn progression_filler(
         let option_item = prog_items.pop();
         locations = locations
             .into_iter()
-            .filter(|&loc| loc.is_accessible(&prog_items))
+            .filter(|&Location(_, ref is_accessible)| is_accessible.0(&prog_items))
             .collect();
         let option_location = locations.pop_front();
         if let (Some(item), Some(chosen_location)) = (option_item, option_location) {
-            filled_locations.push(FilledLocation(item, chosen_location));
+            filled_locations.push(FilledLocation(item, chosen_location.clone()));
             remaining_locations.remove(&chosen_location);
         } else if option_item.is_none() {
             panic!("Out of items");
@@ -81,16 +82,21 @@ mod tests {
     use super::super::item::Item;
     use super::super::location::*;
     use rand::{Rng, StdRng, SeedableRng};
+    use std::rc::Rc;
 
     #[test]
     fn filler_test() {
         let mut locations: Vec<Location> = vec![
-            Location::Location0,
-            Location::Location1,
-            Location::Location2,
-            Location::Location3,
-            Location::Location4,
-            Location::Location5,
+            Location(LocId(0), Rc::new(IsAccessible(Box::new(
+                |items| has_item(items, LabelledItem::Progression(Item::Item0)))))),
+            Location(LocId(1), Rc::new(IsAccessible(Box::new(|items| {
+                has_item(items, LabelledItem::Progression(Item::Item0)) &&
+                    has_item(items, LabelledItem::Progression(Item::Item1))
+            })))),
+            Location(LocId(2), Rc::new(IsAccessible(Box::new(|_| true)))),
+            Location(LocId(3), Rc::new(IsAccessible(Box::new(|_| true)))),
+            Location(LocId(4), Rc::new(IsAccessible(Box::new(|_| true)))),
+            Location(LocId(5), Rc::new(IsAccessible(Box::new(|_| true))))
         ];
 
         let mut prog_items: Vec<LabelledItem> = vec![
@@ -119,12 +125,32 @@ mod tests {
 
         assert_eq!(filled_locations.len(), 6);
 
+        println!("{:?}", filled_locations);
+
+        // check that items were not placed in certain locations
         assert!(!filled_locations
             .iter()
             .any(|filled_loc|
-                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location0) ||
-                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item0), Location::Location1) ||
-                filled_loc == &FilledLocation(LabelledItem::Progression(Item::Item1), Location::Location1)
+                filled_loc == &FilledLocation(
+                    LabelledItem::Progression(Item::Item0),
+                    Location(
+                        LocId(0),
+                        Rc::new(IsAccessible(Box::new(|_| true)))
+                    )
+                ) || filled_loc == &FilledLocation(
+                    LabelledItem::Progression(Item::Item0),
+                    Location(
+                        LocId(1),
+                        Rc::new(IsAccessible(Box::new(|_| true)))
+                    )
+                ) ||
+                filled_loc == &FilledLocation(
+                    LabelledItem::Progression(Item::Item1),
+                    Location(
+                        LocId(1),
+                        Rc::new(IsAccessible(Box::new(|_| true)))
+                    )
+                )
             ));
     }
 }
