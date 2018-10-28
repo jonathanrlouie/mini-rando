@@ -1,1 +1,1 @@
-pub mod mini_rando;
+pub mod main_menu;
