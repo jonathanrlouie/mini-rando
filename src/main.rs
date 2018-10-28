@@ -10,6 +10,7 @@ use std::time::Duration;
 
 use amethyst::{
     prelude::*,
+    assets::{Source, Processor},
     core::{
         transform::TransformBundle,
         frame_limiter::FrameRateLimitStrategy
@@ -23,7 +24,7 @@ use amethyst::{
         application_root_dir
     }
 };
-use states::main_menu::MainMenu;
+use states::main_menu::{MainMenu, UiEventHandlerSystem};
 
 const FRAME_LIMIT: u32 = 60;
 
@@ -34,7 +35,7 @@ fn main() -> amethyst::Result<()> {
 
     let display_config_path = format!("{}/resources/display.ron", app_root);
 
-    let assets = format!("{}/assets", app_root);
+    let assets_dir = format!("{}/assets", app_root);
 
     let key_bindings_path = format!("{}/resources/input.ron", app_root);
 
@@ -47,12 +48,11 @@ fn main() -> amethyst::Result<()> {
             .with_pass(DrawUi::new()),
     );
 
-    let assets_dir = format!("{}/resources", env!("CARGO_MANIFEST_DIR"));
-
     let game_data = GameDataBuilder::default()
         .with_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?
         )?
+        .with(UiEventHandlerSystem::new(), "ui_event_handler", &[])
         .with_bundle(TransformBundle::new())?
         .with_bundle(UiBundle::<String, String>::new())?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?;

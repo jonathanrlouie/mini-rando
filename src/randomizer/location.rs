@@ -1,7 +1,6 @@
-use super::item::{Item, LabelledItem};
+use super::item::{LabelledItem};
 use std::hash::{Hash, Hasher};
 use std::fmt;
-use std::rc::Rc;
 
 pub struct IsAccessible(pub Box<Fn(&[LabelledItem]) -> bool>);
 
@@ -14,8 +13,7 @@ impl fmt::Display for LocId {
     }
 }
 
-#[derive(Clone)]
-pub struct Location(pub LocId, pub Rc<IsAccessible>);
+pub struct Location(pub LocId, pub IsAccessible);
 
 impl PartialEq for Location {
     fn eq(&self, other: &Location) -> bool {
