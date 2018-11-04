@@ -24,7 +24,7 @@ use amethyst::{
         application_root_dir
     }
 };
-use states::main_menu::{MainMenu, UiEventHandlerSystem};
+use states::main_menu::{MainMenu};
 
 const FRAME_LIMIT: u32 = 60;
 
@@ -52,7 +52,6 @@ fn main() -> amethyst::Result<()> {
         .with_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?
         )?
-        .with(UiEventHandlerSystem::new(), "ui_event_handler", &[])
         .with_bundle(TransformBundle::new())?
         .with_bundle(UiBundle::<String, String>::new())?
         .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?;

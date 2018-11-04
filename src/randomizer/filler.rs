@@ -27,15 +27,12 @@ pub fn fill_locations(
 
 fn progression_filler(
     mut prog_items: Vec<LabelledItem>,
-    locations_vec: Vec<Location>
+    mut locations: Vec<Location>
 ) -> ProgressionFillerResult {
     let mut remaining_locations: LinkedHashSet<LocId> =
-        LinkedHashSet::from_iter(locations_vec
+        LinkedHashSet::from_iter(locations
             .iter()
             .map(|ref loc| loc.0));
-
-    let mut locations: LinkedHashSet<Location> =
-        LinkedHashSet::from_iter(locations_vec.into_iter());
 
     let mut filled_locations: Vec<FilledLocation> = vec![];
 
@@ -47,7 +44,7 @@ fn progression_filler(
             .into_iter()
             .filter(|&Location(_, ref is_accessible)| is_accessible.0(&prog_items))
             .collect();
-        let option_location = locations.pop_front();
+        let option_location = locations.pop();
         if let (Some(item), Some(chosen_location)) = (option_item, option_location) {
             filled_locations.push(FilledLocation(item, chosen_location.0));
             remaining_locations.remove(&chosen_location.0);
@@ -130,8 +127,7 @@ mod tests {
                 ) || filled_loc == &FilledLocation(
                     LabelledItem::Progression(Item::Item0),
                     LocId(1)
-                ) ||
-                filled_loc == &FilledLocation(
+                ) || filled_loc == &FilledLocation(
                     LabelledItem::Progression(Item::Item1),
                     LocId(1)
                 )

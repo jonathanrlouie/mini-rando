@@ -2,10 +2,32 @@ use amethyst::{
     prelude::*,
     ecs::prelude::{Entity, System, Write},
     shrev::{EventChannel, ReaderId},
-    ui::{UiCreator, UiEvent}
+    ui::{UiCreator, UiEvent, UiEventType, UiButton, UiTransform}
 };
+use super::seeded::Seeded;
 
 pub struct MainMenu;
+
+impl MainMenu {
+    fn button_click_trans<'a, 'b>(
+        &self,
+        world: &World,
+        target: Entity,
+        button_id: &str,
+        trans: SimpleTrans<'a, 'b>
+    ) -> SimpleTrans<'a, 'b> {
+        let transform_storage = world.read_storage::<UiTransform>();
+        if let Some(button) = transform_storage.get(target) {
+            if button.id == button_id {
+                trans
+            } else {
+                Trans::None
+            }
+        } else {
+            Trans::None
+        }
+    }
+}
 
 impl<'a, 'b> SimpleState<'a, 'b> for MainMenu {
     fn on_start(&mut self, data: StateData<GameData>) {
@@ -14,29 +36,29 @@ impl<'a, 'b> SimpleState<'a, 'b> for MainMenu {
             creator.create("main_menu_ui.ron", ());
         });
     }
-}
 
-pub struct UiEventHandlerSystem {
-    reader_id: Option<ReaderId<UiEvent>>,
-}
-
-impl UiEventHandlerSystem {
-    pub fn new() -> Self {
-        UiEventHandlerSystem { reader_id: None }
+    fn handle_event(&mut self, data: StateData<GameData>, event: StateEvent) -> SimpleTrans<'a, 'b> {
+        let StateData { world, .. } = data;
+        if let StateEvent::Ui(ev) = &event {
+            match ev.event_type {
+                UiEventType::ClickStop => {
+                    self.button_click_trans(
+                        &world,
+                        ev.target,
+                        "seeded_game_button",
+                        Trans::Push(Box::new(Seeded))
+                    )
+                },
+                _ => Trans::None
+            }
+        } else {
+            Trans::None
+        }
     }
-}
 
-impl<'a> System<'a> for UiEventHandlerSystem {
-    type SystemData = Write<'a, EventChannel<UiEvent>>;
 
-    fn run(&mut self, mut events: Self::SystemData) {
-        if self.reader_id.is_none() {
-            self.reader_id = Some(events.register_reader());
-        }
 
-        // Reader id was just initialized above if empty
-        for ev in events.read(self.reader_id.as_mut().unwrap()) {
-            println!("[SYSTEM] You just interacted with a ui element: {:?}", ev);
-        }
+    fn update(&mut self, data: &mut StateData<GameData>) -> SimpleTrans<'a, 'b> {
+        Trans::None
     }
 }
