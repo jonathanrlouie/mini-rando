@@ -13,7 +13,26 @@ Container(
     children: [
         Button(
             transform: (
-                id: "custom_game_button",
+                id: "back_button",
+                x: 104.,
+                y: -328.,
+                width: 128.,
+                height: 64.,
+                tab_order: 9,
+                anchor: TopLeft,
+                mouse_reactive: true,
+            ),
+            button: (
+                text: "Back",
+                font: File("square.ttf", Ttf, ()),
+                font_size: 20.,
+                normal_text_color: (0.0, 0.0, 0.0, 1.0),
+                normal_image: Data(Rgba((0.82, 0.83, 0.83, 1.0), (channel: Srgb))),
+            )
+        ),
+        Button(
+            transform: (
+                id: "generate_seed_button",
                 x: 250.,
                 y: -250.,
                 width: 128.,
@@ -23,7 +42,7 @@ Container(
                 mouse_reactive: true,
             ),
             button: (
-                text: "Custom game",
+                text: "Generate seed",
                 font: File("square.ttf", Ttf, ()),
                 font_size: 20.,
                 normal_text_color: (0.0, 0.0, 0.0, 1.0),

@@ -2,35 +2,32 @@ use amethyst::{
     prelude::*,
     ecs::prelude::{Entity, System, Write},
     shrev::{EventChannel, ReaderId},
-    ui::{UiCreator, UiEvent, UiEventType, UiButton, UiTransform}
+    ui::{UiCreator, UiTransform, UiEvent, UiEventType}
 };
-use super::{
-    custom_game::custom_game::CustomGame,
+use super::super::{
+    main_menu::MainMenu,
     play::Play,
     button_trans::ButtonTrans
 };
-use super::super::game_data::{MiniRandoGameData, StateDispatcher};
+use super::super::super::game_data::{MiniRandoGameData, StateDispatcher};
 
-pub struct MainMenu;
+pub struct CustomGame;
 
-impl ButtonTrans for MainMenu {
-    fn get_trans_for_id<'a, 'b>(&self, world: &mut World, button_id: &str) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
+impl ButtonTrans for CustomGame {
+    fn get_trans_for_id<'a, 'b>(&self, _world: &mut World, button_id: &str) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
         match button_id {
-            "custom_game_button" => {
-                world.delete_all();
-                Trans::Push(Box::new(CustomGame))
-            },
+            "back_button" => Trans::Push(Box::new(MainMenu)),
             "start_game_button" => Trans::Switch(Box::new(Play)),
             _ => Trans::None
         }
     }
 }
 
-impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for MainMenu {
+impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for CustomGame {
     fn on_start(&mut self, data: StateData<MiniRandoGameData>) {
         let StateData { world, .. } = data;
         world.exec(|mut creator: UiCreator| {
-            creator.create("main_menu_ui.ron", ());
+            creator.create("custom_game_ui.ron", ());
         });
     }
 
@@ -53,7 +50,7 @@ impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for MainMenu {
     }
 
     fn update(&mut self, data: StateData<MiniRandoGameData>) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
-        data.data.update(&data.world, StateDispatcher::MainMenu);
+        data.data.update(&data.world, StateDispatcher::CustomGame);
         Trans::None
     }
 }

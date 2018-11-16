@@ -5,6 +5,7 @@ extern crate linked_hash_set;
 
 mod randomizer;
 mod states;
+mod game_data;
 
 use std::time::Duration;
 
@@ -25,6 +26,8 @@ use amethyst::{
     }
 };
 use states::main_menu::{MainMenu};
+use states::custom_game::input::UiEventHandlerSystem;
+use game_data::{MiniRandoGameDataBuilder, MiniRandoGameData};
 
 const FRAME_LIMIT: u32 = 60;
 
@@ -48,13 +51,14 @@ fn main() -> amethyst::Result<()> {
             .with_pass(DrawUi::new()),
     );
 
-    let game_data = GameDataBuilder::default()
-        .with_bundle(
+    let game_data = MiniRandoGameDataBuilder::default()
+        .with_base_bundle(
             InputBundle::<String, String>::new().with_bindings_from_file(&key_bindings_path)?
         )?
-        .with_bundle(TransformBundle::new())?
-        .with_bundle(UiBundle::<String, String>::new())?
-        .with_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?;
+        .with_base_bundle(TransformBundle::new())?
+        .with_base_bundle(UiBundle::<String, String>::new())?
+        .with_base_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
+        .with_custom_game(UiEventHandlerSystem::new(), "ui_event_handler", &[]);
 
     let mut game = Application::build(assets_dir, MainMenu)?
         .with_frame_limit(
