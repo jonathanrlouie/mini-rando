@@ -11,13 +11,12 @@ use std::time::Duration;
 
 use amethyst::{
     prelude::*,
-    assets::{Source, Processor},
     core::{
         transform::TransformBundle,
         frame_limiter::FrameRateLimitStrategy
     },
     renderer::{
-        DrawFlat, PosTex, Pipeline, Stage, DrawSprite, RenderBundle, DisplayConfig,
+        Pipeline, Stage, DrawSprite, RenderBundle, DisplayConfig,
     },
     ui::{DrawUi, UiBundle},
     input::InputBundle,
@@ -27,7 +26,7 @@ use amethyst::{
 };
 use states::main_menu::{MainMenu};
 use states::custom_game::input::UiEventHandlerSystem;
-use game_data::{MiniRandoGameDataBuilder, MiniRandoGameData};
+use game_data::{MiniRandoGameDataBuilder};
 
 const FRAME_LIMIT: u32 = 60;
 

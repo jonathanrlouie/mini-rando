@@ -1,8 +1,6 @@
 use amethyst::{
     prelude::*,
-    ecs::prelude::{Entity, System, Write},
-    shrev::{EventChannel, ReaderId},
-    ui::{UiCreator, UiTransform, UiEvent, UiEventType}
+    ui::{UiCreator, UiEventType}
 };
 use super::super::{
     main_menu::MainMenu,
@@ -14,9 +12,12 @@ use super::super::super::game_data::{MiniRandoGameData, StateDispatcher};
 pub struct CustomGame;
 
 impl ButtonTrans for CustomGame {
-    fn get_trans_for_id<'a, 'b>(&self, _world: &mut World, button_id: &str) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
+    fn get_trans_for_id<'a, 'b>(&self, world: &mut World, button_id: &str) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
         match button_id {
-            "back_button" => Trans::Push(Box::new(MainMenu)),
+            "back_button" => {
+                world.delete_all();
+                Trans::Push(Box::new(MainMenu))
+            },
             "start_game_button" => Trans::Switch(Box::new(Play)),
             _ => Trans::None
         }

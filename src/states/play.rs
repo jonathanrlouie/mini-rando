@@ -1,8 +1,5 @@
 use amethyst::{
     prelude::*,
-    ecs::prelude::{Entity, System, Write},
-    shrev::{EventChannel, ReaderId},
-    ui::{UiCreator, UiEvent, UiEventType}
 };
 use super::super::game_data::MiniRandoGameData;
 
@@ -13,7 +10,7 @@ impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for Play {
         println!("play");
     }
 
-    fn update(&mut self, data: StateData<MiniRandoGameData>) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
+    fn update(&mut self, _data: StateData<MiniRandoGameData>) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
         Trans::None
     }
 }

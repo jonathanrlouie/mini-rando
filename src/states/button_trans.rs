@@ -1,7 +1,7 @@
 use amethyst::{
     prelude::*,
     ecs::prelude::Entity,
-    ui::{UiCreator, UiEvent, UiEventType, UiButton, UiTransform}
+    ui::{UiTransform}
 };
 use super::super::game_data::MiniRandoGameData;
 
@@ -11,19 +11,17 @@ pub trait ButtonTrans {
         world: &mut World,
         target: Entity
     ) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
-        // TODO: See how this works with NLLs
-        let button_id = {
-            let transform_storage = world.read_storage::<UiTransform>();
-            let o_button = transform_storage.get(target);
-            o_button.map(|button| button.id.to_string())
-        };
-
-        if let Some(id) = button_id {
-            self.get_trans_for_id(world, id.as_str())
-        } else {
-            Trans::None
-        }
+        let button_id = get_button_id(world, target);
+        button_id
+            .map(|id| self.get_trans_for_id(world, id.as_str()))
+            .unwrap_or_else(|| Trans::None)
     }
 
     fn get_trans_for_id<'a, 'b>(&self, world: &mut World, button_id: &str) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent>;
+}
+
+fn get_button_id(world: &World, target: Entity) -> Option<String> {
+    let transform_storage = world.read_storage::<UiTransform>();
+    let o_button = transform_storage.get(target);
+    o_button.map(|button| button.id.to_string())
 }

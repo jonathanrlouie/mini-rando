@@ -1,8 +1,6 @@
 use amethyst::{
     prelude::*,
-    ecs::prelude::{Entity, System, Write},
-    shrev::{EventChannel, ReaderId},
-    ui::{UiCreator, UiEvent, UiEventType, UiButton, UiTransform}
+    ui::{UiCreator, UiEventType}
 };
 use super::{
     custom_game::custom_game::CustomGame,
