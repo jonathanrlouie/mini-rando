@@ -1,8 +1,10 @@
 use linked_hash_set::LinkedHashSet;
 use std::iter::FromIterator;
+use rand::StdRng;
 use super::{
     item::LabelledItem,
-    location::{Location, LocId}
+    location::{Location, LocId},
+    shuffler::{Shuffled, shuffle_world}
 };
 
 #[derive(Debug, PartialEq)]
@@ -11,11 +13,20 @@ pub struct FilledLocation(pub LabelledItem, pub LocId);
 // Contains filled locations and remaining empty locations
 struct ProgressionFillerResult(Vec<FilledLocation>, LinkedHashSet<LocId>);
 
-pub fn fill_locations(
-    locations: Vec<Location>,
-    prog_items: Vec<LabelledItem>,
-    other_items: Vec<LabelledItem>
+pub fn shuffle_and_fill(
+    rng: &mut StdRng,
+    mut locations: Vec<Location>,
+    mut prog_items: Vec<LabelledItem>,
+    mut junk_items: Vec<LabelledItem>
 ) -> Vec<FilledLocation> {
+    fill_locations(shuffle_world(rng, locations, prog_items, junk_items))
+}
+
+fn fill_locations(
+    mut shuffled: Shuffled
+) -> Vec<FilledLocation> {
+    let Shuffled(locations, prog_items, other_items) = shuffled;
+
     debug_assert!(locations.len() == prog_items.len() + other_items.len());
 
     let ProgressionFillerResult(mut filled_locs, remaining_locs): ProgressionFillerResult =
@@ -70,12 +81,18 @@ fn fast_filler(items: Vec<LabelledItem>, locations: LinkedHashSet<LocId>) -> Vec
 #[cfg(test)]
 mod tests {
     use super::*;
+    use super::super::shuffler;
     use super::super::item::Item;
     use super::super::location::{has_item, IsAccessible};
+    use rand;
     use rand::{Rng, StdRng, SeedableRng};
 
+    const SEED_LENGTH: usize = 32;
+
+    // TODO: Add more tests
     #[test]
     fn filler_test() {
+        // TODO: Repeat this test at least a few times
         let mut locations: Vec<Location> = vec![
             Location(LocId(0), IsAccessible(Box::new(
                 |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
@@ -101,17 +118,10 @@ mod tests {
             LabelledItem::Junk(Item::Item3)
         ];
 
-        let mut rng: StdRng = StdRng::from_seed([0u8; 32]);
-
-        rng.shuffle(&mut prog_items);
-        rng.shuffle(&mut locations);
-        rng.shuffle(&mut junk_items);
+        let mut rng: StdRng = StdRng::from_seed([rand::random::<u8>(); SEED_LENGTH]);
 
         let filled_locations =
-            fill_locations(
-                locations,
-                prog_items,
-                junk_items);
+            shuffle_and_fill(&mut rng, locations, prog_items, junk_items);
 
         assert_eq!(filled_locations.len(), 6);
 

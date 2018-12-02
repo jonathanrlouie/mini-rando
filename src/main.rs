@@ -2,6 +2,8 @@ extern crate amethyst;
 extern crate tiled;
 extern crate rand;
 extern crate linked_hash_set;
+#[macro_use]
+extern crate serde;
 
 mod randomizer;
 mod states;

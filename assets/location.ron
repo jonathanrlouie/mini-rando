@@ -1,0 +1,10 @@
+#![enable(implicit_some)]
+Prefab(
+    entities: [
+        (
+            data: (
+                was_checked: true
+            )
+        )
+    ]
+)
