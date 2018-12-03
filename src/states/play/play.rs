@@ -19,16 +19,16 @@ pub struct Play {
 impl Play {
     fn generate_locations(&self) -> Vec<FilledLocation> {
         let mut locations: Vec<Location> = vec![
-            Location(LocId(0), IsAccessible(Box::new(
+            Location(LocId::Loc0, IsAccessible(Box::new(
                 |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
-            Location(LocId(1), IsAccessible(Box::new(|items| {
+            Location(LocId::Loc1, IsAccessible(Box::new(|items| {
                 has_item(items, LabelledItem::Progression(Item::Item0)) &&
                     has_item(items, LabelledItem::Progression(Item::Item1))
             }))),
-            Location(LocId(2), IsAccessible(Box::new(|_| true))),
-            Location(LocId(3), IsAccessible(Box::new(|_| true))),
-            Location(LocId(4), IsAccessible(Box::new(|_| true))),
-            Location(LocId(5), IsAccessible(Box::new(|_| true)))
+            Location(LocId::Loc2, IsAccessible(Box::new(|_| true))),
+            Location(LocId::Loc3, IsAccessible(Box::new(|_| true))),
+            Location(LocId::Loc4, IsAccessible(Box::new(|_| true))),
+            Location(LocId::Loc5, IsAccessible(Box::new(|_| true)))
         ];
 
         let mut prog_items: Vec<LabelledItem> = vec![

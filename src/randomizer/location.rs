@@ -5,12 +5,13 @@ use std::fmt;
 pub struct IsAccessible(pub Box<Fn(&[LabelledItem]) -> bool>);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
-pub struct LocId(pub u64);
-
-impl fmt::Display for LocId {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{}", self.0)
-    }
+pub enum LocId {
+    Loc0,
+    Loc1,
+    Loc2,
+    Loc3,
+    Loc4,
+    Loc5
 }
 
 pub struct Location(pub LocId, pub IsAccessible);
@@ -35,7 +36,7 @@ impl Hash for Location {
 impl fmt::Debug for Location {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let Location(loc_id, _) = *self;
-        write!(f, "Location {{ loc_id: {} }}", loc_id)
+        write!(f, "Location {{ loc_id: {:?} }}", loc_id)
     }
 }
 

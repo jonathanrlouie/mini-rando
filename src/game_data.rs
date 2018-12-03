@@ -75,16 +75,16 @@ impl<'a, 'b> MiniRandoGameDataBuilder<'a, 'b> {
     }
 
     pub fn with_custom_game<S>(mut self, system: S, name: &str, dependencies: &[&str]) -> Self
-        where
-                for<'c> S: System<'c> + Send + 'a
+    where
+        for<'c> S: System<'c> + Send + 'a
     {
         self.custom_game.add(system, name, dependencies);
         self
     }
 
     pub fn with_play<S>(mut self, system: S, name: &str, dependencies: &[&str]) -> Self
-        where
-                for<'c> S: System<'c> + Send + 'a
+    where
+        for<'c> S: System<'c> + Send + 'a
     {
         self.play.add(system, name, dependencies);
         self
