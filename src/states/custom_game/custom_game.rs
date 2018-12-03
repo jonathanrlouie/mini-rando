@@ -1,16 +1,16 @@
-use rand;
 use amethyst::{
     prelude::*,
     ui::{UiCreator, UiEventType}
 };
 use super::super::{
-    SEED_LENGTH,
     play::play::Play,
     button_trans::ButtonTrans
 };
-use super::super::super::game_data::{MiniRandoGameData, StateDispatcher};
+use super::super::super::{
+    randomizer::seed::Seed,
+    game_data::{MiniRandoGameData, StateDispatcher}
+};
 
-// TODO: Figure out how to use seed ID
 pub struct CustomGame;
 
 impl ButtonTrans for CustomGame {
@@ -19,7 +19,7 @@ impl ButtonTrans for CustomGame {
             "back_button" => {
                 Trans::Pop
             },
-            "start_game_button" => Trans::Switch(Box::new(Play { seed: [rand::random::<u8>(); SEED_LENGTH] })),
+            "start_game_button" => Trans::Switch(Box::new(Play { seed: Seed::generate_seed() })),
             _ => Trans::None
         }
     }

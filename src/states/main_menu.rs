@@ -1,15 +1,14 @@
-use rand;
 use amethyst::{
     prelude::*,
     ui::{UiCreator, UiEventType}
 };
 use super::{
-    SEED_LENGTH,
     custom_game::custom_game::CustomGame,
     play::play::Play,
     button_trans::ButtonTrans
 };
 use super::super::game_data::{MiniRandoGameData, StateDispatcher};
+use super::super::randomizer::seed::{Seed};
 
 pub struct MainMenu;
 
@@ -20,7 +19,7 @@ impl ButtonTrans for MainMenu {
                 Trans::Push(Box::new(CustomGame))
             },
             "start_game_button" => {
-                Trans::Push(Box::new(Play { seed: [rand::random::<u8>(); SEED_LENGTH] }))
+                Trans::Push(Box::new(Play { seed: Seed::generate_seed() }))
             },
             _ => Trans::None
         }

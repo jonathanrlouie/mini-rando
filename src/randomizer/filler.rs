@@ -15,15 +15,15 @@ struct ProgressionFillerResult(Vec<FilledLocation>, LinkedHashSet<LocId>);
 
 pub fn shuffle_and_fill(
     rng: &mut StdRng,
-    mut locations: Vec<Location>,
-    mut prog_items: Vec<LabelledItem>,
-    mut junk_items: Vec<LabelledItem>
+    locations: Vec<Location>,
+    prog_items: Vec<LabelledItem>,
+    junk_items: Vec<LabelledItem>
 ) -> Vec<FilledLocation> {
     fill_locations(shuffle_world(rng, locations, prog_items, junk_items))
 }
 
 fn fill_locations(
-    mut shuffled: Shuffled
+    shuffled: Shuffled
 ) -> Vec<FilledLocation> {
     let Shuffled(locations, prog_items, other_items) = shuffled;
 
@@ -81,66 +81,64 @@ fn fast_filler(items: Vec<LabelledItem>, locations: LinkedHashSet<LocId>) -> Vec
 #[cfg(test)]
 mod tests {
     use super::*;
-    use super::super::shuffler;
     use super::super::item::Item;
     use super::super::location::{has_item, IsAccessible};
-    use rand;
-    use rand::{Rng, StdRng, SeedableRng};
-
-    const SEED_LENGTH: usize = 32;
+    use super::super::seed::Seed;
+    use rand::{StdRng, SeedableRng};
 
     // TODO: Add more tests
     #[test]
     fn filler_test() {
-        // TODO: Repeat this test at least a few times
-        let mut locations: Vec<Location> = vec![
-            Location(LocId::Loc0, IsAccessible(Box::new(
-                |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
-            Location(LocId::Loc1, IsAccessible(Box::new(|items| {
-                has_item(items, LabelledItem::Progression(Item::Item0)) &&
-                    has_item(items, LabelledItem::Progression(Item::Item1))
-            }))),
-            Location(LocId::Loc2, IsAccessible(Box::new(|_| true))),
-            Location(LocId::Loc3, IsAccessible(Box::new(|_| true))),
-            Location(LocId::Loc4, IsAccessible(Box::new(|_| true))),
-            Location(LocId::Loc5, IsAccessible(Box::new(|_| true)))
-        ];
+        for _ in 0..10 {
+            let locations: Vec<Location> = vec![
+                Location(LocId::Loc0, IsAccessible(Box::new(
+                    |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
+                Location(LocId::Loc1, IsAccessible(Box::new(|items| {
+                    has_item(items, LabelledItem::Progression(Item::Item0)) &&
+                        has_item(items, LabelledItem::Progression(Item::Item1))
+                }))),
+                Location(LocId::Loc2, IsAccessible(Box::new(|_| true))),
+                Location(LocId::Loc3, IsAccessible(Box::new(|_| true))),
+                Location(LocId::Loc4, IsAccessible(Box::new(|_| true))),
+                Location(LocId::Loc5, IsAccessible(Box::new(|_| true)))
+            ];
 
-        let mut prog_items: Vec<LabelledItem> = vec![
-            LabelledItem::Progression(Item::Item0),
-            LabelledItem::Progression(Item::Item1),
-            LabelledItem::Progression(Item::Item2)
-        ];
+            let prog_items: Vec<LabelledItem> = vec![
+                LabelledItem::Progression(Item::Item0),
+                LabelledItem::Progression(Item::Item1),
+                LabelledItem::Progression(Item::Item2)
+            ];
 
-        let mut junk_items: Vec<LabelledItem> = vec![
-            LabelledItem::Junk(Item::Item3),
-            LabelledItem::Junk(Item::Item3),
-            LabelledItem::Junk(Item::Item3)
-        ];
+            let junk_items: Vec<LabelledItem> = vec![
+                LabelledItem::Junk(Item::Item3),
+                LabelledItem::Junk(Item::Item3),
+                LabelledItem::Junk(Item::Item3)
+            ];
 
-        let mut rng: StdRng = StdRng::from_seed([rand::random::<u8>(); SEED_LENGTH]);
+            let mut rng: StdRng = StdRng::seed_from_u64(Seed::generate_seed().int_seed.0);
 
-        let filled_locations =
-            shuffle_and_fill(&mut rng, locations, prog_items, junk_items);
+            let filled_locations =
+                shuffle_and_fill(&mut rng, locations, prog_items, junk_items);
 
-        assert_eq!(filled_locations.len(), 6);
+            assert_eq!(filled_locations.len(), 6);
 
-        println!("{:?}", filled_locations);
+            println!("{:?}", filled_locations);
 
-        // check that items were not placed in certain locations
-        assert!(!filled_locations
-            .iter()
-            .any(|filled_loc|
-                filled_loc == &FilledLocation(
-                    LabelledItem::Progression(Item::Item0),
-                    LocId::Loc0
-                ) || filled_loc == &FilledLocation(
-                    LabelledItem::Progression(Item::Item0),
-                    LocId::Loc1
-                ) || filled_loc == &FilledLocation(
-                    LabelledItem::Progression(Item::Item1),
-                    LocId::Loc1
-                )
-            ));
+            // check that items were not placed in certain locations
+            assert!(!filled_locations
+                .iter()
+                .any(|filled_loc|
+                    filled_loc == &FilledLocation(
+                        LabelledItem::Progression(Item::Item0),
+                        LocId::Loc0
+                    ) || filled_loc == &FilledLocation(
+                        LabelledItem::Progression(Item::Item0),
+                        LocId::Loc1
+                    ) || filled_loc == &FilledLocation(
+                        LabelledItem::Progression(Item::Item1),
+                        LocId::Loc1
+                    )
+                ));
+        }
     }
 }
