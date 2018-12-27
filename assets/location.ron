@@ -3,7 +3,7 @@ Prefab(
     entities: [
         (
             data: (
-                was_checked: true
+                was_checked: false
             )
         )
     ]

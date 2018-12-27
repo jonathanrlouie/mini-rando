@@ -66,6 +66,14 @@ impl<'a, 'b> MiniRandoGameDataBuilder<'a, 'b> {
         Ok(self)
     }
 
+    pub fn with_core<S>(mut self, system: S, name: &str, dependencies: &[&str]) -> Self
+        where
+                for<'c> S: System<'c> + Send + 'a
+    {
+        self.core.add(system, name, dependencies);
+        self
+    }
+
     pub fn with_main_menu<S>(mut self, system: S, name: &str, dependencies: &[&str]) -> Self
     where
         for<'c> S: System<'c> + Send + 'a

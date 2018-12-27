@@ -4,7 +4,7 @@ use rand::StdRng;
 use super::{
     item::LabelledItem,
     location::{Location, LocId},
-    shuffler::{Shuffled, shuffle_world}
+    shuffler::{shuffle_world, Shuffled},
 };
 
 #[derive(Debug, PartialEq)]
@@ -18,16 +18,15 @@ pub fn shuffle_and_fill(
     locations: Vec<Location>,
     prog_items: Vec<LabelledItem>,
     junk_items: Vec<LabelledItem>
-) -> Vec<FilledLocation> {
-    fill_locations(shuffle_world(rng, locations, prog_items, junk_items))
+) -> Option<Vec<FilledLocation>> {
+    shuffle_world(rng, locations, prog_items, junk_items)
+        .map(fill_locations)
 }
 
 fn fill_locations(
     shuffled: Shuffled
 ) -> Vec<FilledLocation> {
-    let Shuffled(locations, prog_items, other_items) = shuffled;
-
-    debug_assert!(locations.len() == prog_items.len() + other_items.len());
+    let (locations, prog_items, other_items) = shuffled.get();
 
     let ProgressionFillerResult(mut filled_locs, remaining_locs): ProgressionFillerResult =
         progression_filler(prog_items, locations);
@@ -118,7 +117,8 @@ mod tests {
             let mut rng: StdRng = StdRng::seed_from_u64(Seed::generate_seed().int_seed.0);
 
             let filled_locations =
-                shuffle_and_fill(&mut rng, locations, prog_items, junk_items);
+                shuffle_and_fill(&mut rng, locations, prog_items, junk_items)
+                    .expect("Number of locations does not match total number of items.");
 
             assert_eq!(filled_locations.len(), 6);
 

@@ -1,6 +1,7 @@
 use amethyst::{
     prelude::*,
-    assets::{PrefabLoader, RonFormat}
+    ecs::prelude::Write,
+    assets::{Prefab, PrefabLoader, RonFormat, ProgressCounter, Completion, Handle}
 };
 use rand::{SeedableRng, StdRng};
 use super::super::super::game_data::{MiniRandoGameData, StateDispatcher};
@@ -10,14 +11,21 @@ use super::super::super::randomizer::{
     item::{Item, LabelledItem},
     seed::{Seed}
 };
-use super::prefabs::LocationPrefabData;
+use super::prefabs::WasChecked;
+
+#[derive(Default)]
+struct Scene {
+    handle: Option<Handle<Prefab<WasChecked>>>
+}
 
 pub struct Play {
-    pub seed: Seed
+    pub seed: Seed,
+    pub progress: Option<ProgressCounter>,
+    pub initialized: bool
 }
 
 impl Play {
-    fn generate_locations(&self) -> Vec<FilledLocation> {
+    fn generate_locations(&self) -> Option<Vec<FilledLocation>> {
         let locations: Vec<Location> = vec![
             Location(LocId::Loc0, IsAccessible(Box::new(
                 |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
@@ -53,20 +61,56 @@ impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for Play {
     fn on_start(&mut self, data: StateData<MiniRandoGameData>) {
         let StateData { world, .. } = data;
         let filled_locations = self.generate_locations();
-        let mut handle = None;
+
+        self.progress = Some(ProgressCounter::default());
+
         world.exec(
-            |loader: PrefabLoader<LocationPrefabData>| {
-                handle = Some(loader.load("location.ron", RonFormat, (), ()));
+            |(loader, mut scene): (PrefabLoader<WasChecked>, Write<Scene>)| {
+                scene.handle = Some(
+                    {
+                        loader.load("location.ron", RonFormat, (), self.progress.as_mut().unwrap())
+                    });
             }
         );
-        world
-            .create_entity()
-            .with(handle.unwrap())
-            .build();
+
+
+
     }
 
     fn update(&mut self, data: StateData<MiniRandoGameData>) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
         data.data.update(&data.world, StateDispatcher::Play);
+
+        if !self.initialized {
+            let remove = match self.progress.as_ref().map(|p| p.complete()) {
+                None | Some(Completion::Loading) => false,
+
+                Some(Completion::Complete) => {
+                    let scene_handle = data
+                        .world
+                        .read_resource::<Scene>()
+                        .handle
+                        .as_ref()
+                        .unwrap()
+                        .clone();
+
+                    data.world.create_entity().with(scene_handle).build();
+
+                    println!("success");
+                    self.initialized = true;
+
+                    true
+                }
+
+                Some(Completion::Failed) => {
+                    println!("Error: {:?}", self.progress.as_ref().unwrap().errors());
+                    return Trans::Quit;
+                }
+            };
+            if remove {
+                self.progress = None;
+            }
+        }
+
         Trans::None
     }
 }

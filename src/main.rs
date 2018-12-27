@@ -1,3 +1,4 @@
+#[macro_use]
 extern crate amethyst;
 extern crate tiled;
 extern crate rand;
@@ -17,8 +18,11 @@ use amethyst::{
         transform::TransformBundle,
         frame_limiter::FrameRateLimitStrategy
     },
+    assets::{
+        PrefabLoaderSystem
+    },
     renderer::{
-        Pipeline, Stage, DrawSprite, RenderBundle, DisplayConfig,
+        Pipeline, Stage, RenderBundle, DisplayConfig,
     },
     ui::{DrawUi, UiBundle},
     input::InputBundle,
@@ -28,6 +32,7 @@ use amethyst::{
 };
 use states::main_menu::{MainMenu};
 use states::custom_game::input::UiEventHandlerSystem;
+use states::play::prefabs::WasChecked;
 use game_data::{MiniRandoGameDataBuilder};
 
 const FRAME_LIMIT: u32 = 60;
@@ -48,7 +53,6 @@ fn main() -> amethyst::Result<()> {
     let pipe = Pipeline::build().with_stage(
         Stage::with_backbuffer()
             .clear_target([0.0, 0.0, 0.0, 1.0], 1.0)
-            .with_pass(DrawSprite::new())
             .with_pass(DrawUi::new()),
     );
 
@@ -59,6 +63,11 @@ fn main() -> amethyst::Result<()> {
         .with_base_bundle(TransformBundle::new())?
         .with_base_bundle(UiBundle::<String, String>::new())?
         .with_base_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
+        .with_core(
+            PrefabLoaderSystem::<WasChecked>::default(),
+            "scene_loader",
+            &[],
+        )
         .with_custom_game(UiEventHandlerSystem::new(), "ui_event_handler", &[]);
 
     let mut game = Application::build(assets_dir, MainMenu)?
