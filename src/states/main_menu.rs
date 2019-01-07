@@ -19,7 +19,12 @@ impl ButtonTrans for MainMenu {
                 Trans::Push(Box::new(CustomGame))
             },
             "start_game_button" => {
-                Trans::Push(Box::new(Play { seed: Seed::generate_seed(), progress: None, initialized: false }))
+                Trans::Push(Box::new(
+                    Play {
+                        seed: Seed::generate_seed().expect("seed failed to generate"),
+                        progress: None,
+                        initialized: false
+                    }))
             },
             _ => Trans::None
         }

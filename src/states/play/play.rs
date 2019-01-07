@@ -51,7 +51,7 @@ impl Play {
             LabelledItem::Junk(Item::Item3)
         ];
 
-        let mut rng: StdRng = StdRng::seed_from_u64(self.seed.int_seed.0);
+        let mut rng: StdRng = StdRng::seed_from_u64(self.seed.int_seed.get_clone());
 
         shuffle_and_fill(&mut rng, locations, prog_items, junk_items)
     }

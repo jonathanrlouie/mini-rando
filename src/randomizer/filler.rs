@@ -7,11 +7,38 @@ use super::{
     shuffler::{shuffle_world, Shuffled},
 };
 
+pub use self::fast_filler_args::FastFillerArgs;
+
 #[derive(Debug, PartialEq)]
 pub struct FilledLocation(pub LabelledItem, pub LocId);
 
 // Contains filled locations and remaining empty locations
 struct ProgressionFillerResult(Vec<FilledLocation>, LinkedHashSet<LocId>);
+
+pub mod fast_filler_args {
+    use linked_hash_set::LinkedHashSet;
+    use super::super::{
+        item::LabelledItem,
+        location::LocId
+    };
+
+    pub struct FastFillerArgs(Vec<LabelledItem>, LinkedHashSet<LocId>);
+
+    impl FastFillerArgs {
+        pub fn new(items: Vec<LabelledItem>, locations: LinkedHashSet<LocId>) -> Option<Self> {
+            if items.len() == locations.len() {
+                Some(FastFillerArgs(items, locations))
+            } else {
+                None
+            }
+        }
+
+        pub fn get(self) -> (Vec<LabelledItem>, LinkedHashSet<LocId>) {
+            (self.0, self.1)
+        }
+    }
+
+}
 
 pub fn shuffle_and_fill(
     rng: &mut StdRng,
@@ -19,57 +46,57 @@ pub fn shuffle_and_fill(
     prog_items: Vec<LabelledItem>,
     junk_items: Vec<LabelledItem>
 ) -> Option<Vec<FilledLocation>> {
-    shuffle_world(rng, locations, prog_items, junk_items)
-        .map(fill_locations)
+    let shuffled = shuffle_world(rng, locations, prog_items, junk_items)?;
+    fill_locations(shuffled)
 }
 
 fn fill_locations(
     shuffled: Shuffled
-) -> Vec<FilledLocation> {
+) -> Option<Vec<FilledLocation>> {
     let (locations, prog_items, other_items) = shuffled.get();
 
     let ProgressionFillerResult(mut filled_locs, remaining_locs): ProgressionFillerResult =
-        progression_filler(prog_items, locations);
+        progression_filler(prog_items, locations)?;
 
-    filled_locs.append(&mut fast_filler(other_items, remaining_locs));
-    filled_locs
+    let option_fast_filler_args = FastFillerArgs::new(other_items, remaining_locs);
+
+    if let Some(fast_filler_args) = option_fast_filler_args {
+        filled_locs.append(&mut fast_filler(fast_filler_args));
+        Some(filled_locs)
+    } else {
+        None
+    }
 }
 
 fn progression_filler(
     mut prog_items: Vec<LabelledItem>,
     mut locations: Vec<Location>
-) -> ProgressionFillerResult {
+) -> Option<ProgressionFillerResult> {
     let mut remaining_locations: LinkedHashSet<LocId> =
         LinkedHashSet::from_iter(locations
             .iter()
-            .map(|ref loc| loc.0));
+            .map(|loc| (*loc).0));
 
     let mut filled_locations: Vec<FilledLocation> = vec![];
 
     let item_count = prog_items.len();
 
     for _ in 0..item_count {
-        let option_item = prog_items.pop();
+        let item = prog_items.pop()?;
         locations = locations
             .into_iter()
             .filter(|&Location(_, ref is_accessible)| is_accessible.0(&prog_items))
             .collect();
-        let option_location = locations.pop();
-        if let (Some(item), Some(chosen_location)) = (option_item, option_location) {
-            filled_locations.push(FilledLocation(item, chosen_location.0));
-            remaining_locations.remove(&chosen_location.0);
-        } else if option_item.is_none() {
-            panic!("Out of items");
-        } else {
-            panic!("Out of locations");
-        }
+        let location = locations.pop()?;
+        filled_locations.push(FilledLocation(item, location.0));
+        remaining_locations.remove(&location.0);
     }
 
-    ProgressionFillerResult(filled_locations, remaining_locations)
+    Some(ProgressionFillerResult(filled_locations, remaining_locations))
 }
 
-fn fast_filler(items: Vec<LabelledItem>, locations: LinkedHashSet<LocId>) -> Vec<FilledLocation> {
-    debug_assert!(items.len() == locations.len());
+fn fast_filler(args: FastFillerArgs) -> Vec<FilledLocation> {
+    let (items, locations) = args.get();
     items
         .into_iter()
         .zip(locations)
@@ -114,7 +141,10 @@ mod tests {
                 LabelledItem::Junk(Item::Item3)
             ];
 
-            let mut rng: StdRng = StdRng::seed_from_u64(Seed::generate_seed().int_seed.0);
+            let mut rng: StdRng = StdRng::seed_from_u64(Seed::generate_seed()
+                .expect("Seed failed to generate.")
+                .int_seed
+                .get());
 
             let filled_locations =
                 shuffle_and_fill(&mut rng, locations, prog_items, junk_items)

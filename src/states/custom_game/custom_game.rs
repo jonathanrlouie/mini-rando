@@ -19,7 +19,12 @@ impl ButtonTrans for CustomGame {
             "back_button" => {
                 Trans::Pop
             },
-            "start_game_button" => Trans::Switch(Box::new(Play { seed: Seed::generate_seed(), progress: None, initialized: false })),
+            "start_game_button" => Trans::Switch(Box::new(
+                Play {
+                    seed: Seed::generate_seed().expect("seed failed to generate"),
+                    progress: None,
+                    initialized: false
+                })),
             _ => Trans::None
         }
     }
