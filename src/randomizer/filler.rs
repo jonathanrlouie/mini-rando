@@ -143,8 +143,7 @@ mod tests {
 
             let mut rng: StdRng = StdRng::seed_from_u64(Seed::generate_seed()
                 .expect("Seed failed to generate.")
-                .int_seed
-                .get());
+                .get_int_seed_clone());
 
             let filled_locations =
                 shuffle_and_fill(&mut rng, locations, prog_items, junk_items)

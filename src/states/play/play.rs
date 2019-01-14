@@ -13,15 +13,9 @@ use super::super::super::randomizer::{
 };
 use super::prefabs::WasChecked;
 
-#[derive(Default)]
-struct Scene {
-    handle: Option<Handle<Prefab<WasChecked>>>
-}
-
 pub struct Play {
     pub seed: Seed,
-    pub progress: Option<ProgressCounter>,
-    pub initialized: bool
+    pub was_checked_handle: Handle<Prefab<WasChecked>>
 }
 
 impl Play {
@@ -51,7 +45,7 @@ impl Play {
             LabelledItem::Junk(Item::Item3)
         ];
 
-        let mut rng: StdRng = StdRng::seed_from_u64(self.seed.int_seed.get_clone());
+        let mut rng: StdRng = StdRng::seed_from_u64(self.seed.get_int_seed_clone());
 
         shuffle_and_fill(&mut rng, locations, prog_items, junk_items)
     }
@@ -61,56 +55,10 @@ impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for Play {
     fn on_start(&mut self, data: StateData<MiniRandoGameData>) {
         let StateData { world, .. } = data;
         let filled_locations = self.generate_locations();
-
-        self.progress = Some(ProgressCounter::default());
-
-        world.exec(
-            |(loader, mut scene): (PrefabLoader<WasChecked>, Write<Scene>)| {
-                scene.handle = Some(
-                    {
-                        loader.load("location.ron", RonFormat, (), self.progress.as_mut().unwrap())
-                    });
-            }
-        );
-
-
-
     }
 
     fn update(&mut self, data: StateData<MiniRandoGameData>) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
         data.data.update(&data.world, StateDispatcher::Play);
-
-        if !self.initialized {
-            let remove = match self.progress.as_ref().map(|p| p.complete()) {
-                None | Some(Completion::Loading) => false,
-
-                Some(Completion::Complete) => {
-                    let scene_handle = data
-                        .world
-                        .read_resource::<Scene>()
-                        .handle
-                        .as_ref()
-                        .unwrap()
-                        .clone();
-
-                    data.world.create_entity().with(scene_handle).build();
-
-                    println!("success");
-                    self.initialized = true;
-
-                    true
-                }
-
-                Some(Completion::Failed) => {
-                    println!("Error: {:?}", self.progress.as_ref().unwrap().errors());
-                    return Trans::Quit;
-                }
-            };
-            if remove {
-                self.progress = None;
-            }
-        }
-
         Trans::None
     }
 }

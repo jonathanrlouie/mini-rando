@@ -31,6 +31,10 @@ impl<'a, 'b> MiniRandoGameData<'a, 'b> {
         }
         self.core_dispatcher.dispatch(&world.res);
     }
+
+    pub fn update_no_dispatcher(&mut self, world: &World) {
+        self.core_dispatcher.dispatch(&world.res);
+    }
 }
 
 pub struct MiniRandoGameDataBuilder<'a, 'b> {

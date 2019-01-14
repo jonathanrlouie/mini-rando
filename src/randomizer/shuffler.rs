@@ -28,6 +28,7 @@ pub mod shuffled {
     }
 }
 
+// TODO: tag prog_items and junk_items with proper types
 pub fn shuffle_world(
     rng: &mut StdRng,
     mut locations: Vec<Location>,

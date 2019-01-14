@@ -1,11 +1,9 @@
-use rand::{
-    thread_rng, Rng,
-    distributions::Uniform
-};
-
 pub use self::valid_seed_char::ValidSeedChar;
 pub use self::seed_id::SeedId;
 pub use self::int_seed::IntSeed;
+pub use self::seed::Seed;
+
+// TODO: refactor this whole file into separate module
 
 const ID_LENGTH: usize = 10;
 
@@ -68,6 +66,7 @@ pub mod valid_seed_char {
 pub mod seed_id {
     use super::ID_LENGTH;
 
+    #[derive(Clone)]
     pub struct SeedId(String);
 
     impl SeedId {
@@ -94,6 +93,7 @@ pub mod int_seed {
     use std::hash::{Hash, Hasher};
     use super::SeedId;
 
+    #[derive(Copy, Clone)]
     pub struct IntSeed(u64);
 
     impl IntSeed {
@@ -118,29 +118,46 @@ pub mod int_seed {
     }
 }
 
-pub struct Seed {
-    pub id: SeedId,
-    pub int_seed: IntSeed
-}
+pub mod seed {
+    use rand::{
+        thread_rng, Rng,
+        distributions::Uniform
+    };
 
-impl Seed {
-    pub fn generate_seed() -> Option<Self> {
-        let range = Uniform::new_inclusive(0, 35);
+    use super::{SeedId, IntSeed, ID_LENGTH, ValidSeedChar};
 
-        let id_string = thread_rng()
-            .sample_iter(&range)
-            .take(ID_LENGTH)
-            .map(|c: u8| ValidSeedChar::new(c)
-                .map(|v| v.get()))
-            .collect::<Option<String>>()?;
+    pub struct Seed {
+        id: SeedId,
+        int_seed: IntSeed
+    }
 
-        let seed_id = SeedId::new(id_string)?;
+    impl Seed {
+        pub fn generate_seed() -> Option<Self> {
+            let range = Uniform::new_inclusive(0, 35);
 
-        let int_seed = IntSeed::get_hashed_seed(&seed_id);
+            let id_string = thread_rng()
+                .sample_iter(&range)
+                .take(ID_LENGTH)
+                .map(|c: u8| ValidSeedChar::new(c)
+                    .map(|v| v.get()))
+                .collect::<Option<String>>()?;
 
-        Some(Seed {
-            id: seed_id,
-            int_seed
-        })
+            let seed_id = SeedId::new(id_string)?;
+
+            let int_seed = IntSeed::get_hashed_seed(&seed_id);
+
+            Some(Seed {
+                id: seed_id,
+                int_seed
+            })
+        }
+
+        pub fn get_id_clone(&self) -> String {
+            self.id.get_clone()
+        }
+
+        pub fn get_int_seed_clone(&self) -> u64 {
+            self.int_seed.get_clone()
+        }
     }
 }

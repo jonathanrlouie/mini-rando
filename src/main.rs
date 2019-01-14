@@ -30,10 +30,10 @@ use amethyst::{
         application_root_dir
     }
 };
-use states::main_menu::{MainMenu};
-use states::custom_game::input::UiEventHandlerSystem;
-use states::play::prefabs::WasChecked;
-use game_data::{MiniRandoGameDataBuilder};
+use self::states::main_menu::{MainMenu};
+use self::states::custom_game::input::UiEventHandlerSystem;
+use self::states::play::prefabs::WasChecked;
+use self::game_data::{MiniRandoGameDataBuilder};
 
 const FRAME_LIMIT: u32 = 60;
 
@@ -65,7 +65,7 @@ fn main() -> amethyst::Result<()> {
         .with_base_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with_core(
             PrefabLoaderSystem::<WasChecked>::default(),
-            "scene_loader",
+            "was_checked_loader",
             &[],
         )
         .with_custom_game(UiEventHandlerSystem::new(), "ui_event_handler", &[]);

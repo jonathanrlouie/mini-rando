@@ -3,7 +3,7 @@ use amethyst::{
     ui::{UiCreator, UiEventType}
 };
 use super::super::{
-    play::play::Play,
+    play::load_play::LoadPlay,
     button_trans::ButtonTrans
 };
 use super::super::super::{
@@ -19,12 +19,9 @@ impl ButtonTrans for CustomGame {
             "back_button" => {
                 Trans::Pop
             },
-            "start_game_button" => Trans::Switch(Box::new(
-                Play {
-                    seed: Seed::generate_seed().expect("seed failed to generate"),
-                    progress: None,
-                    initialized: false
-                })),
+            "start_game_button" => Seed::generate_seed()
+                .map(|seed| Trans::Switch(Box::new(LoadPlay::new(seed))))
+                .unwrap_or_else(|| Trans::None),
             _ => Trans::None
         }
     }

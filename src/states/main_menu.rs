@@ -4,7 +4,7 @@ use amethyst::{
 };
 use super::{
     custom_game::custom_game::CustomGame,
-    play::play::Play,
+    play::load_play::LoadPlay,
     button_trans::ButtonTrans
 };
 use super::super::game_data::{MiniRandoGameData, StateDispatcher};
@@ -19,12 +19,9 @@ impl ButtonTrans for MainMenu {
                 Trans::Push(Box::new(CustomGame))
             },
             "start_game_button" => {
-                Trans::Push(Box::new(
-                    Play {
-                        seed: Seed::generate_seed().expect("seed failed to generate"),
-                        progress: None,
-                        initialized: false
-                    }))
+                Seed::generate_seed().map(|seed|
+                    Trans::Push(Box::new(LoadPlay::new(seed))))
+                    .unwrap_or_else(|| Trans::None)
             },
             _ => Trans::None
         }
