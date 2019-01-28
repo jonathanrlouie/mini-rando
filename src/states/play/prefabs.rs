@@ -1,14 +1,19 @@
 use amethyst::{
-    ecs::prelude::{Entity, Component, WriteStorage, DenseVecStorage},
+    ecs::prelude::{Entity, Component, WriteStorage, VecStorage},
     assets::{PrefabData, PrefabError, ProgressCounter}
 };
+
+#[derive(Deserialize, Serialize, PrefabData)]
+pub struct ItemLocation {
+    pub was_checked: WasChecked
+}
 
 #[derive(Default, Deserialize, Serialize, Clone, PrefabData)]
 #[prefab(Component)]
 pub struct WasChecked {
-    was_checked: bool
+    pub was_checked: bool
 }
 
 impl Component for WasChecked {
-    type Storage = DenseVecStorage<Self>;
+    type Storage = VecStorage<Self>;
 }

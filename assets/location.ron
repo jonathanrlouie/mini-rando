@@ -1,9 +1,9 @@
 #![enable(implicit_some)]
 Prefab(
     entities: [
-        (
-            data: (
-                was_checked: false
+        PrefabEntity(
+            data: ItemLocation(
+                was_checked: WasChecked(was_checked: false)
             )
         )
     ]

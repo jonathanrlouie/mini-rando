@@ -32,7 +32,7 @@ use amethyst::{
 };
 use self::states::main_menu::{MainMenu};
 use self::states::custom_game::input::UiEventHandlerSystem;
-use self::states::play::prefabs::WasChecked;
+use self::states::play::prefabs::ItemLocation;
 use self::game_data::{MiniRandoGameDataBuilder};
 
 const FRAME_LIMIT: u32 = 60;
@@ -64,8 +64,8 @@ fn main() -> amethyst::Result<()> {
         .with_base_bundle(UiBundle::<String, String>::new())?
         .with_base_bundle(RenderBundle::new(pipe, Some(config)).with_sprite_sheet_processor())?
         .with_core(
-            PrefabLoaderSystem::<WasChecked>::default(),
-            "was_checked_loader",
+            PrefabLoaderSystem::<ItemLocation>::default(),
+            "item_location_loader",
             &[],
         )
         .with_custom_game(UiEventHandlerSystem::new(), "ui_event_handler", &[]);

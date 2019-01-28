@@ -5,7 +5,7 @@ use amethyst::{
 };
 use super::{
     play::Play,
-    prefabs::WasChecked
+    prefabs::ItemLocation
 };
 use super::super::super::{
     game_data::{MiniRandoGameData, StateDispatcher},
@@ -16,7 +16,7 @@ use super::super::super::{
 
 #[derive(Default)]
 pub struct LoadPlay {
-    was_checked_handle: Option<Handle<Prefab<WasChecked>>>,
+    item_location_handle: Option<Handle<Prefab<ItemLocation>>>,
     progress: ProgressCounter,
     seed: Option<Seed>
 }
@@ -28,10 +28,10 @@ impl LoadPlay {
         load_play
     }
 
-    fn load_was_checked_prefab(&mut self, world: &mut World) {
+    fn load_item_location_prefab(&mut self, world: &mut World) {
         world.exec(
-            |loader: PrefabLoader<WasChecked>| {
-            self.was_checked_handle = Some(
+            |loader: PrefabLoader<ItemLocation>| {
+            self.item_location_handle = Some(
                 loader.load(
                     "location.ron",
                     RonFormat,
@@ -43,10 +43,11 @@ impl LoadPlay {
     }
 
     fn load_complete<'a, 'b>(&mut self) -> Option<Trans<MiniRandoGameData<'a, 'b>, StateEvent>> {
-        let handle = self.was_checked_handle.take()?;
+        let handle = self.item_location_handle.take()?;
         let seed = self.seed.take()?;
+
         Some(Trans::Switch(
-            Box::new(Play { seed, was_checked_handle: handle })
+            Box::new(Play::new(seed, handle ))
         ))
     }
 }
@@ -55,15 +56,21 @@ impl <'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for LoadPlay {
     fn on_start(&mut self, data: StateData<MiniRandoGameData>) {
         let StateData { world, .. } = data;
 
-        self.load_was_checked_prefab(world);
+        self.load_item_location_prefab(world);
     }
 
     fn update(&mut self, data: StateData<MiniRandoGameData>) -> Trans<MiniRandoGameData<'a, 'b>, StateEvent> {
         data.data.update_no_dispatcher(&data.world);
 
         match self.progress.complete() {
-            Completion::Loading => Trans::None,
-            Completion::Complete => self.load_complete().unwrap_or_else(|| Trans::Quit),
+            Completion::Loading => {
+                dbg!("loading");
+                Trans::None
+            },
+            Completion::Complete => {
+                dbg!("complete");
+                self.load_complete().unwrap_or_else(|| Trans::Quit)
+            },
             Completion::Failed => Trans::Quit
         }
     }
