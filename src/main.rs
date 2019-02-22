@@ -5,10 +5,12 @@ extern crate rand;
 extern crate linked_hash_set;
 #[macro_use]
 extern crate serde;
+extern crate num_traits;
 
 mod randomizer;
 mod states;
 mod game_data;
+mod tilemap;
 
 use std::time::Duration;
 
