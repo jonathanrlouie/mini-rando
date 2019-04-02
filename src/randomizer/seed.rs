@@ -3,8 +3,6 @@ pub use self::seed_id::SeedId;
 pub use self::int_seed::IntSeed;
 pub use self::seed::Seed;
 
-// TODO: refactor this whole file into separate module
-
 const ID_LENGTH: usize = 10;
 
 pub mod valid_seed_char {
@@ -113,7 +111,7 @@ pub mod int_seed {
         }
 
         pub fn get_clone(&self) -> u64 {
-            self.0
+            self.0.clone()
         }
     }
 }

@@ -11,7 +11,8 @@ use super::super::super::{
     game_data::{MiniRandoGameData, StateDispatcher},
     randomizer::{
         seed::Seed
-    }
+    },
+    rng::GameRng,
 };
 
 #[derive(Default)]
@@ -47,7 +48,7 @@ impl LoadPlay {
         let seed = self.seed.take()?;
 
         Some(Trans::Switch(
-            Box::new(Play::new(seed, handle ))
+            Box::new(Play::new(GameRng::new(seed), handle ))
         ))
     }
 }

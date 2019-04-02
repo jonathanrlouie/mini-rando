@@ -6,6 +6,7 @@ use super::{
     location::{Location, LocId},
     shuffler::{shuffle_world, Shuffled},
 };
+use super::super::rng::GameRng;
 
 pub use self::fast_filler_args::FastFillerArgs;
 
@@ -41,7 +42,7 @@ pub mod fast_filler_args {
 }
 
 pub fn shuffle_and_fill(
-    rng: &mut StdRng,
+    rng: &mut GameRng,
     locations: Vec<Location>,
     prog_items: Vec<LabelledItem>,
     junk_items: Vec<LabelledItem>
@@ -111,6 +112,7 @@ mod tests {
     use super::super::location::{has_item, IsAccessible};
     use super::super::seed::Seed;
     use rand::{StdRng, SeedableRng};
+    use super::super::super::rng::GameRng;
 
     // TODO: Add more tests
     #[test]
@@ -141,9 +143,8 @@ mod tests {
                 LabelledItem::Junk(Item::Item3)
             ];
 
-            let mut rng: StdRng = StdRng::seed_from_u64(Seed::generate_seed()
-                .expect("Seed failed to generate.")
-                .get_int_seed_clone());
+            let mut rng: GameRng = GameRng::new(Seed::generate_seed()
+                .expect("Seed failed to generate."));
 
             let filled_locations =
                 shuffle_and_fill(&mut rng, locations, prog_items, junk_items)

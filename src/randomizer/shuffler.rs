@@ -4,6 +4,7 @@ use super::{
     location::Location
 };
 pub use self::shuffled::Shuffled;
+use super::super::rng::GameRng;
 
 pub mod shuffled {
     use super::{
@@ -28,15 +29,11 @@ pub mod shuffled {
     }
 }
 
-// TODO: tag prog_items and junk_items with proper types
 pub fn shuffle_world(
-    rng: &mut StdRng,
+    rng: &mut GameRng,
     mut locations: Vec<Location>,
     mut prog_items: Vec<LabelledItem>,
     mut junk_items: Vec<LabelledItem>
 ) -> Option<Shuffled> {
-    rng.shuffle(&mut prog_items);
-    rng.shuffle(&mut locations);
-    rng.shuffle(&mut junk_items);
-    Shuffled::new(locations, prog_items, junk_items)
+    Shuffled::new(rng.shuffle(locations), rng.shuffle(prog_items), rng.shuffle(junk_items))
 }

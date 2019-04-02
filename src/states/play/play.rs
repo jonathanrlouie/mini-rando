@@ -4,6 +4,7 @@ use amethyst::{
     assets::{Prefab, PrefabLoader, RonFormat, ProgressCounter, Completion, Handle}
 };
 use rand::{SeedableRng, StdRng};
+use super::super::super::rng::GameRng;
 use super::super::super::game_data::{MiniRandoGameData, StateDispatcher};
 use super::super::super::randomizer::{
     filler::{FilledLocation, shuffle_and_fill},
@@ -14,21 +15,21 @@ use super::super::super::randomizer::{
 use super::prefabs::{ItemLocation, WasChecked};
 
 pub struct Play {
-    pub seed: Seed,
+    pub rng: GameRng,
     pub item_location_handle: Handle<Prefab<ItemLocation>>,
     entity: Option<Entity>
 }
 
 impl Play {
-    pub fn new(seed: Seed, item_location_handle: Handle<Prefab<ItemLocation>>) -> Self {
+    pub fn new(rng: GameRng, item_location_handle: Handle<Prefab<ItemLocation>>) -> Self {
         Self {
-            seed,
+            rng,
             item_location_handle,
             entity: None
         }
     }
 
-    fn generate_locations(&self) -> Option<Vec<FilledLocation>> {
+    fn generate_locations(&mut self) -> Option<Vec<FilledLocation>> {
         let locations: Vec<Location> = vec![
             Location(LocId::Loc0, IsAccessible(Box::new(
                 |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
@@ -54,9 +55,7 @@ impl Play {
             LabelledItem::Junk(Item::Item3)
         ];
 
-        let mut rng: StdRng = StdRng::seed_from_u64(self.seed.get_int_seed_clone());
-
-        shuffle_and_fill(&mut rng, locations, prog_items, junk_items)
+        shuffle_and_fill(&mut self.rng, locations, prog_items, junk_items)
     }
 }
 
@@ -64,7 +63,6 @@ impl<'a, 'b> State<MiniRandoGameData<'a, 'b>, StateEvent> for Play {
     fn on_start(&mut self, data: StateData<MiniRandoGameData>) {
         let StateData { world, .. } = data;
         let filled_locations = self.generate_locations();
-
         self.entity = Some(world
             .create_entity()
             .with(self.item_location_handle.clone())
