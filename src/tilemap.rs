@@ -107,11 +107,11 @@ pub struct TilemapPath<'a> {
     path: &'a str
 }
 
-pub struct TilemapInfo {
+pub struct TilemapInfo<TImageSource> {
     tilemap_dims: TilemapDimensions,
     tileset_dims: TilesetDimensions,
     tilemap_tiles: TilemapTiles,
-    img_src: ImageSource
+    img_src: TImageSource
 }
 
 pub struct TilemapDimensions {
@@ -129,14 +129,81 @@ pub struct TilemapTiles {
     pub tiles: Vec<[f32; 4]>,
 }
 
-trait TiledMap<Tileset, Layer> {
-    fn width(&self) -> u32;
-    fn height(&self) -> u32;
-    fn tilesets(self) -> Vec<Tileset>;
-    fn layers(self) -> Vec<Layer>;
+trait TilemapCreator<
+    'creator,
+    TImageSource,
+    TImage: TiledImage<TImageSource>,
+    TTileset: TiledTileset<TImageSource, TImage>,
+    TLayer: TiledLayer,
+    TMap: TiledMap< TImageSource, TImage, TTileset, TLayer>
+> {
+    fn create_map(&'creator self) -> Result<TMap, Box<Error>>;
+
+    fn initialise_tilemap(&'creator self) -> Result<TilemapInfo<TImageSource>, Box<Error>> {
+        let map = self.create_map()?;
+        let tileset = map.fetch_tileset()?;
+        let img = tileset.fetch_tileset_image()?;
+        let tilemap_dims = TilemapDimensions {
+            width: map.width(),
+            height: map.height()
+        };
+        let tileset_dims = tileset.fetch_tileset_dims(img)?;
+        let img_src = img.fetch_img_src();
+        let tilemap_tiles = map.generate_tile_data(&tileset_dims)?;
+        Ok(TilemapInfo::<TImageSource> { tilemap_dims, tileset_dims, tilemap_tiles, img_src })
+    }
 }
 
-impl TiledMap<tiled::Tileset, tiled::Layer> for tiled::Map {
+impl<'a> TilemapCreator<'a, ImageSource, tiled::Image, tiled::Tileset, tiled::Layer, tiled::Map> for TilemapPath<'a> {
+    // Example path: "./resources/tetris_tilemap.tmx"
+    fn create_map(&self) -> Result<tiled::Map, Box<Error>> {
+        let map_file = File::open(&Path::new(self.path))?;
+        let map = tiled::parse(map_file)?;
+        Ok(map)
+    }
+}
+
+// My tiled types
+
+trait TiledMap<
+    TImageSource,
+    TImage: TiledImage<TImageSource>,
+    TTileset: TiledTileset<TImageSource, TImage>,
+    TLayer: TiledLayer
+> {
+    fn width(&self) -> u32;
+    fn height(&self) -> u32;
+    fn tilesets(&self) -> &Vec<TTileset>;
+    fn layers(&self) -> &Vec<TLayer>;
+    fn fetch_tileset(&self) -> Result<&TTileset, FetchTilesetError> where Self: Sized {
+        self.tilesets().get(0).ok_or_else(|| FetchTilesetError)
+    }
+
+    /*
+    A Tiled map looks somewhat like this:
+    [0, 0, 0, 0, 0, 0,
+    1, 0, 0 ,0 ,0 ,0
+    2, 0, 3, 1, 1, 0]
+    */
+    fn generate_tile_data(&self, tileset_dimensions: &TilesetDimensions) -> Result<TilemapTiles, TileDataError> {
+        let &TilesetDimensions{ width, height } = tileset_dimensions;
+        self.layers().iter()
+            .flat_map(|layer| layer.tiles().iter()
+                .flat_map(|rows| rows.into_iter()
+                    .map(|&tile| {
+                        if tile != 0 {
+                            calculate_tile_data(tile, width, height)
+                        } else {
+                            Some([0.0, 0.0, 0.0, 0.0])
+                        }
+                    })))
+            .collect::<Option<Vec<[f32; 4]>>>()
+            .ok_or_else(|| TileDataError)
+            .map(|tiles| TilemapTiles { tiles })
+    }
+}
+
+impl TiledMap< ImageSource, tiled::Image, tiled::Tileset, tiled::Layer> for tiled::Map {
     fn width(&self) -> u32 {
         self.width
     }
@@ -145,84 +212,83 @@ impl TiledMap<tiled::Tileset, tiled::Layer> for tiled::Map {
         self.height
     }
 
-    fn tilesets(self) -> Vec<tiled::Tileset> {
-        self.tilesets
+    fn tilesets(&self) -> &Vec<tiled::Tileset> {
+        &self.tilesets
     }
 
-    fn layers(self) -> Vec<tiled::Layer> {
-        self.layers
+    fn layers(&self) -> &Vec<tiled::Layer> {
+        &self.layers
+    }
+}
+
+trait TiledLayer {
+    fn tiles(&self) -> &Vec<Vec<u32>>;
+}
+
+impl TiledLayer for tiled::Layer {
+    fn tiles(&self) -> &Vec<Vec<u32>> {
+        &self.tiles
+    }
+}
+
+trait TiledTileset<TImageSource, TImage: TiledImage<TImageSource>> {
+    fn tile_width(&self) -> u32;
+    fn tile_height(&self) -> u32;
+    fn images(&self) -> &Vec<TImage>;
+    fn fetch_tileset_image(&self) -> Result<&TImage, FetchImageError>;
+    fn fetch_tileset_dims(&self, img: &TImage) -> Result<TilesetDimensions, Box<Error>> {
+        let tileset_width = CheckedDiv::checked_div(&(img.width() as u32), &self.tile_width())
+            .ok_or_else(|| FetchTilesetWidthError)?;
+        let tileset_height = CheckedDiv::checked_div(&(img.height() as u32), &self.tile_height())
+            .ok_or_else(|| FetchTilesetHeightError)?;
+
+        Ok(TilesetDimensions {
+            width: tileset_width,
+            height: tileset_height
+        })
+    }
+}
+
+impl TiledTileset<ImageSource, tiled::Image> for tiled::Tileset {
+    fn tile_width(&self) -> u32 {
+        self.tile_width
+    }
+
+    fn tile_height(&self) -> u32 {
+        self.tile_height
+    }
+
+    fn images(&self) -> &Vec<tiled::Image> {
+        &self.images
+    }
+
+    fn fetch_tileset_image(&self) -> Result<&tiled::Image, FetchImageError> {
+        self.images().get(0).ok_or_else(|| FetchImageError)
+    }
+}
+
+trait TiledImage<TImageSource> {
+    // Yes, for some reason, tiled uses i32 for width and height. Because widths can be negative, right? :)
+    fn width(&self) -> i32;
+    fn height(&self) -> i32;
+    fn fetch_img_src(&self) -> TImageSource;
+}
+
+impl TiledImage<ImageSource> for tiled::Image {
+    fn width(&self) -> i32 {
+        self.width
+    }
+
+    fn height(&self) -> i32 {
+        self.height
+    }
+
+    fn fetch_img_src(&self) -> ImageSource {
+        ImageSource(format!("{}{}", "../resources/", self.source))
     }
 }
 
 struct ImageSource(String);
-
-pub fn initialise_tilemap(tilemap_path: TilemapPath) -> Result<TilemapInfo, Box<Error>> {
-    let map = parse_tmx_file(tilemap_path)?;
-    let tileset = fetch_tileset(&map)?;
-    let img = fetch_tileset_image(tileset)?;
-    let tilemap_dims = TilemapDimensions {
-        width: map.width,
-        height: map.height
-    };
-    let tileset_dims = fetch_tileset_dims(tileset, img)?;
-    let img_src = fetch_img_src(img);
-    let tilemap_tiles = generate_tile_data(&map, &tileset_dims)?;
-    Ok(TilemapInfo { tilemap_dims, tileset_dims, tilemap_tiles, img_src })
-}
-
-fn fetch_tileset_dims(tileset: &tiled::Tileset, img: &tiled::Image) -> Result<TilesetDimensions, Box<Error>> {
-    let tileset_width = CheckedDiv::checked_div(&(img.width as u32), &tileset.tile_width)
-        .ok_or_else(|| FetchTilesetWidthError)?;
-    let tileset_height = CheckedDiv::checked_div(&(img.height as u32), &tileset.tile_height)
-        .ok_or_else(|| FetchTilesetHeightError)?;
-
-    Ok(TilesetDimensions {
-        width: tileset_width,
-        height: tileset_height
-    })
-}
-
-fn fetch_img_src(img: &tiled::Image) -> ImageSource {
-    ImageSource(format!("{}{}", "../resources/", &img.source))
-}
-
-// Example path: "./resources/tetris_tilemap.tmx"
-fn parse_tmx_file(tilemap_path: TilemapPath) -> Result<tiled::Map, Box<Error>> {
-    let map_file = File::open(&Path::new(tilemap_path.path))?;
-    let map = tiled::parse(map_file)?;
-    Ok(map)
-}
-
-fn fetch_tileset(map: &tiled::Map) -> Result<&tiled::Tileset, FetchTilesetError> {
-    map.tilesets.get(0).ok_or_else(|| FetchTilesetError)
-}
-
-fn fetch_tileset_image(tileset: &tiled::Tileset) -> Result<&tiled::Image, FetchImageError> {
-    tileset.images.get(0).ok_or_else(|| FetchImageError)
-}
-
-/*
-A Tiled map looks somewhat like this:
-[0, 0, 0, 0, 0, 0,
-1, 0, 0 ,0 ,0 ,0
-2, 0, 3, 1, 1, 0]
-*/
-fn generate_tile_data(map: &tiled::Map, tileset_dimensions: &TilesetDimensions) -> Result<TilemapTiles, TileDataError> {
-    let &TilesetDimensions{ width, height } = tileset_dimensions;
-    map.layers.iter()
-        .flat_map(|layer| layer.tiles.iter()
-            .flat_map(|rows| rows.into_iter()
-                .map(|&tile| {
-                    if tile != 0 {
-                        calculate_tile_data(tile, width, height)
-                    } else {
-                        Some([0.0, 0.0, 0.0, 0.0])
-                    }
-                })))
-        .collect::<Option<Vec<[f32; 4]>>>()
-        .ok_or_else(|| TileDataError)
-        .map(|tiles| TilemapTiles { tiles })
-}
 
 fn calculate_tile_data(tile: u32, width: u32, height: u32) -> Option<[f32; 4]> {
     let tile_sub1 = CheckedSub::checked_sub(&tile, &1)?;
@@ -276,6 +342,7 @@ pub fn generate_tilemap_plane(tilesize: u32, tilemap_width: u32, tilemap_height:
 mod tests {
     use super::*;
 
+    /*
     struct MockTiledMap<Tileset, Layer> {
         width: u32,
         height: u32,
@@ -300,15 +367,15 @@ mod tests {
             self.layers
         }
     }
-
+*/
     #[test]
     fn tilemap_info_test() {
-        let mock = MockTiledMap::<u32, u32> {
+        /*let mock = MockTiledMap::<u32, u32> {
             width: 64,
             height: 64,
             layers: Vec::new(),
             tilesets: Vec::new()
-        };
+        };*/
         assert_eq!(true, true)
     }
 }
