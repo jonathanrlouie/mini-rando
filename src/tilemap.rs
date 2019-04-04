@@ -130,16 +130,15 @@ pub struct TilemapTiles {
 }
 
 trait TilemapCreator<
-    'creator,
     TImageSource,
     TImage: TiledImage<TImageSource>,
     TTileset: TiledTileset<TImageSource, TImage>,
     TLayer: TiledLayer,
     TMap: TiledMap< TImageSource, TImage, TTileset, TLayer>
 > {
-    fn create_map(&'creator self) -> Result<TMap, Box<Error>>;
+    fn create_map(&self) -> Result<TMap, Box<Error>>;
 
-    fn initialise_tilemap(&'creator self) -> Result<TilemapInfo<TImageSource>, Box<Error>> {
+    fn initialise_tilemap(&self) -> Result<TilemapInfo<TImageSource>, Box<Error>> {
         let map = self.create_map()?;
         let tileset = map.fetch_tileset()?;
         let img = tileset.fetch_tileset_image()?;
@@ -154,7 +153,7 @@ trait TilemapCreator<
     }
 }
 
-impl<'a> TilemapCreator<'a, ImageSource, tiled::Image, tiled::Tileset, tiled::Layer, tiled::Map> for TilemapPath<'a> {
+impl<'a> TilemapCreator<ImageSource, tiled::Image, tiled::Tileset, tiled::Layer, tiled::Map> for TilemapPath<'a> {
     // Example path: "./resources/tetris_tilemap.tmx"
     fn create_map(&self) -> Result<tiled::Map, Box<Error>> {
         let map_file = File::open(&Path::new(self.path))?;
@@ -175,7 +174,8 @@ trait TiledMap<
     fn height(&self) -> u32;
     fn tilesets(&self) -> &Vec<TTileset>;
     fn layers(&self) -> &Vec<TLayer>;
-    fn fetch_tileset(&self) -> Result<&TTileset, FetchTilesetError> where Self: Sized {
+
+    fn fetch_tileset(&self) -> Result<&TTileset, FetchTilesetError> {
         self.tilesets().get(0).ok_or_else(|| FetchTilesetError)
     }
 
@@ -235,7 +235,11 @@ trait TiledTileset<TImageSource, TImage: TiledImage<TImageSource>> {
     fn tile_width(&self) -> u32;
     fn tile_height(&self) -> u32;
     fn images(&self) -> &Vec<TImage>;
-    fn fetch_tileset_image(&self) -> Result<&TImage, FetchImageError>;
+
+    fn fetch_tileset_image(&self) -> Result<&TImage, FetchImageError> {
+        self.images().get(0).ok_or_else(|| FetchImageError)
+    }
+
     fn fetch_tileset_dims(&self, img: &TImage) -> Result<TilesetDimensions, Box<Error>> {
         let tileset_width = CheckedDiv::checked_div(&(img.width() as u32), &self.tile_width())
             .ok_or_else(|| FetchTilesetWidthError)?;
@@ -260,10 +264,6 @@ impl TiledTileset<ImageSource, tiled::Image> for tiled::Tileset {
 
     fn images(&self) -> &Vec<tiled::Image> {
         &self.images
-    }
-
-    fn fetch_tileset_image(&self) -> Result<&tiled::Image, FetchImageError> {
-        self.images().get(0).ok_or_else(|| FetchImageError)
     }
 }
 
@@ -342,15 +342,49 @@ pub fn generate_tilemap_plane(tilesize: u32, tilemap_width: u32, tilemap_height:
 mod tests {
     use super::*;
 
-    /*
-    struct MockTiledMap<Tileset, Layer> {
-        width: u32,
-        height: u32,
-        layers: Vec<Layer>,
-        tilesets: Vec<Tileset>
+    struct MockTilemapPath;
+
+    impl TilemapCreator<ImageSource, MockImage, MockTileset, MockLayer, MockMap> for MockTilemapPath {
+        fn create_map(&self) -> Result<MockMap, Box<Error>> {
+            let mock_map = MockMap {
+                width: 5,
+                height: 5,
+                layers: vec![
+                    MockLayer {
+                        tiles: vec![
+                            vec![0, 0, 0, 0, 0],
+                            vec![0, 0, 0, 0, 0],
+                            vec![0, 0, 0, 0, 0],
+                            vec![0, 0, 0, 0, 0],
+                            vec![0, 0, 0, 0, 0],
+                        ]
+                    }
+                ],
+                tilesets: vec![
+                    MockTileset {
+                        tile_width: 32,
+                        tile_height: 32,
+                        images: vec![
+                            MockImage {
+                                width: 640,
+                                height: 480
+                            }
+                        ]
+                    }
+                ]
+            };
+            Ok(mock_map)
+        }
     }
 
-    impl<Tileset, Layer> TiledMap<Tileset, Layer> for MockTiledMap<Tileset, Layer> {
+    struct MockMap {
+        width: u32,
+        height: u32,
+        layers: Vec<MockLayer>,
+        tilesets: Vec<MockTileset>
+    }
+
+    impl TiledMap<ImageSource, MockImage, MockTileset, MockLayer> for MockMap {
         fn width(&self) -> u32 {
             self.width
         }
@@ -359,23 +393,68 @@ mod tests {
             self.height
         }
 
-        fn tilesets(self) -> Vec<Tileset> {
-            self.tilesets
+        fn tilesets(&self) -> &Vec<MockTileset> {
+            &self.tilesets
         }
 
-        fn layers(self) -> Vec<Layer> {
-            self.layers
+        fn layers(&self) -> &Vec<MockLayer> {
+            &self.layers
         }
     }
-*/
+
+    struct MockLayer {
+        tiles: Vec<Vec<u32>>
+    }
+
+    impl TiledLayer for MockLayer {
+        fn tiles(&self) -> &Vec<Vec<u32>> {
+            &self.tiles
+        }
+    }
+
+    struct MockTileset {
+        tile_width: u32,
+        tile_height: u32,
+        images: Vec<MockImage>
+    }
+
+    impl TiledTileset<ImageSource, MockImage> for MockTileset {
+        fn tile_width(&self) -> u32 {
+            self.tile_width
+        }
+
+        fn tile_height(&self) -> u32 {
+            self.tile_height
+        }
+
+        fn images(&self) -> &Vec<MockImage> {
+            &self.images
+        }
+    }
+
+    struct MockImage {
+        width: i32,
+        height: i32
+    }
+
+    impl TiledImage<ImageSource> for MockImage {
+        fn width(&self) -> i32 {
+            self.width
+        }
+
+        fn height(&self) -> i32 {
+            self.height
+        }
+
+        fn fetch_img_src(&self) -> ImageSource {
+            ImageSource("".to_string())
+        }
+    }
+
     #[test]
     fn tilemap_info_test() {
-        /*let mock = MockTiledMap::<u32, u32> {
-            width: 64,
-            height: 64,
-            layers: Vec::new(),
-            tilesets: Vec::new()
-        };*/
-        assert_eq!(true, true)
+        let mock = MockTilemapPath;
+        let tilemap_info = mock.initialise_tilemap().expect("Error creating tile map info.");
+        assert_eq!(tilemap_info.img_src.0, "")
     }
 }

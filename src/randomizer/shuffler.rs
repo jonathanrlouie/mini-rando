@@ -31,9 +31,12 @@ pub mod shuffled {
 
 pub fn shuffle_world(
     rng: &mut GameRng,
-    mut locations: Vec<Location>,
-    mut prog_items: Vec<LabelledItem>,
-    mut junk_items: Vec<LabelledItem>
+    locations: Vec<Location>,
+    prog_items: Vec<LabelledItem>,
+    junk_items: Vec<LabelledItem>
 ) -> Option<Shuffled> {
-    Shuffled::new(rng.shuffle(locations), rng.shuffle(prog_items), rng.shuffle(junk_items))
+    Shuffled::new(
+        rng.shuffle(locations),
+        rng.shuffle(prog_items),
+        rng.shuffle(junk_items))
 }
