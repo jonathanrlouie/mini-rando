@@ -342,41 +342,6 @@ pub fn generate_tilemap_plane(tilesize: u32, tilemap_width: u32, tilemap_height:
 mod tests {
     use super::*;
 
-    struct MockTilemapPath;
-
-    impl TilemapCreator<ImageSource, MockImage, MockTileset, MockLayer, MockMap> for MockTilemapPath {
-        fn create_map(&self) -> Result<MockMap, Box<Error>> {
-            let mock_map = MockMap {
-                width: 5,
-                height: 5,
-                layers: vec![
-                    MockLayer {
-                        tiles: vec![
-                            vec![0, 0, 0, 0, 0],
-                            vec![0, 0, 0, 0, 0],
-                            vec![0, 0, 0, 0, 0],
-                            vec![0, 0, 0, 0, 0],
-                            vec![0, 0, 0, 0, 0],
-                        ]
-                    }
-                ],
-                tilesets: vec![
-                    MockTileset {
-                        tile_width: 32,
-                        tile_height: 32,
-                        images: vec![
-                            MockImage {
-                                width: 640,
-                                height: 480
-                            }
-                        ]
-                    }
-                ]
-            };
-            Ok(mock_map)
-        }
-    }
-
     struct MockMap {
         width: u32,
         height: u32,
@@ -451,10 +416,141 @@ mod tests {
         }
     }
 
+    struct MockTilemapPath {
+        mock_map: fn() -> MockMap
+    }
+
+    impl TilemapCreator<ImageSource, MockImage, MockTileset, MockLayer, MockMap> for MockTilemapPath {
+        fn create_map(&self) -> Result<MockMap, Box<Error>> {
+            Ok((self.mock_map)())
+        }
+    }
+
     #[test]
     fn tilemap_info_test() {
-        let mock = MockTilemapPath;
+        // number of tiles on x-axis: 20
+        // number of tiles on y-axis: 15
+        // tileset looks something like this:
+        // |- - -| * * * * * * * * * * ...
+        // |     | * * * * * * * * * * ...
+        // |- - -| * * * * * * * * * * ...
+        // ...
+        //
+        // Origin of final coords is lower left corner of the tileset image.
+        // Tilemap indices have 1 subtracted from them (so 0 is a blank square).
+        // Indexing of tilemap tiles starts from top-left corner of tileset.
+        // As a result, 6 becomes 5, which causes the final coord to be (5, 14).
+        let mock_map = || MockMap {
+            width: 5,
+            height: 5,
+            layers: vec![
+                MockLayer {
+                    tiles: vec![
+                        vec![0,  0,  0,  0, 0],
+                        vec![0,  1,  2,  3, 0],
+                        vec![0, 21, 22, 23, 0],
+                        vec![0, 41, 42, 43, 0],
+                        vec![0,  0,  0,  0, 0],
+                    ]
+                }
+            ],
+            tilesets: vec![
+                MockTileset {
+                    tile_width: 32,
+                    tile_height: 32,
+                    images: vec![
+                        MockImage {
+                            width: 640,
+                            height: 480
+                        }
+                    ]
+                }
+            ]
+        };
+        let mock = MockTilemapPath {
+            mock_map
+        };
         let tilemap_info = mock.initialise_tilemap().expect("Error creating tile map info.");
-        assert_eq!(tilemap_info.img_src.0, "")
+        let tiles: Vec<[f32; 4]> = tilemap_info.tilemap_tiles.tiles;
+
+        // first row
+        assert_eq!(tiles[0][0] as u32, 0);
+        assert_eq!(tiles[0][1] as u32, 0);
+
+        assert_eq!(tiles[1][0] as u32, 0);
+        assert_eq!(tiles[1][1] as u32, 0);
+
+        assert_eq!(tiles[2][0] as u32, 0);
+        assert_eq!(tiles[2][1] as u32, 0);
+
+        assert_eq!(tiles[3][0] as u32, 0);
+        assert_eq!(tiles[3][1] as u32, 0);
+
+        assert_eq!(tiles[4][0] as u32, 0);
+        assert_eq!(tiles[4][1] as u32, 0);
+
+        // second row
+        assert_eq!(tiles[5][0] as u32, 0);
+        assert_eq!(tiles[5][1] as u32, 0);
+
+        assert_eq!(tiles[6][0] as u32, 0);
+        assert_eq!(tiles[6][1] as u32, 14);
+
+        assert_eq!(tiles[7][0] as u32, 1);
+        assert_eq!(tiles[7][1] as u32, 14);
+
+        assert_eq!(tiles[8][0] as u32, 2);
+        assert_eq!(tiles[8][1] as u32, 14);
+
+        assert_eq!(tiles[9][0] as u32, 0);
+        assert_eq!(tiles[9][1] as u32, 0);
+
+        // third row
+        assert_eq!(tiles[10][0] as u32, 0);
+        assert_eq!(tiles[10][1] as u32, 0);
+
+        assert_eq!(tiles[11][0] as u32, 0);
+        assert_eq!(tiles[11][1] as u32, 13);
+
+        assert_eq!(tiles[12][0] as u32, 1);
+        assert_eq!(tiles[12][1] as u32, 13);
+
+        assert_eq!(tiles[13][0] as u32, 2);
+        assert_eq!(tiles[13][1] as u32, 13);
+
+        assert_eq!(tiles[14][0] as u32, 0);
+        assert_eq!(tiles[14][1] as u32, 0);
+
+        // fourth row
+        assert_eq!(tiles[15][0] as u32, 0);
+        assert_eq!(tiles[15][1] as u32, 0);
+
+        assert_eq!(tiles[16][0] as u32, 0);
+        assert_eq!(tiles[16][1] as u32, 12);
+
+        assert_eq!(tiles[17][0] as u32, 1);
+        assert_eq!(tiles[17][1] as u32, 12);
+
+        assert_eq!(tiles[18][0] as u32, 2);
+        assert_eq!(tiles[18][1] as u32, 12);
+
+        assert_eq!(tiles[19][0] as u32, 0);
+        assert_eq!(tiles[19][1] as u32, 0);
+
+        // fifth row
+        assert_eq!(tiles[20][0] as u32, 0);
+        assert_eq!(tiles[20][1] as u32, 0);
+
+        assert_eq!(tiles[21][0] as u32, 0);
+        assert_eq!(tiles[21][1] as u32, 0);
+
+        assert_eq!(tiles[22][0] as u32, 0);
+        assert_eq!(tiles[22][1] as u32, 0);
+
+        assert_eq!(tiles[23][0] as u32, 0);
+        assert_eq!(tiles[23][1] as u32, 0);
+
+        assert_eq!(tiles[24][0] as u32, 0);
+        assert_eq!(tiles[24][1] as u32, 0);
     }
 }
