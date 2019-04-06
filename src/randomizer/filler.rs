@@ -86,7 +86,7 @@ fn progression_filler<F: Fn(&[LabelledItem]) -> bool>(
         let item = prog_items.pop()?;
         locations = locations
             .into_iter()
-            .filter(|&Location(_, ref is_accessible)| is_accessible.0()(&prog_items))
+            .filter(|&Location(_, ref is_accessible)| is_accessible.0(&prog_items))
             .collect();
         let location = locations.pop()?;
         filled_locations.push(FilledLocation(item, location.0));
@@ -119,16 +119,16 @@ mod tests {
     fn filler_test() {
         for _ in 0..10 {
             let locations: Vec<Location<fn(&[LabelledItem]) -> bool>> = vec![
-                Location(LocId::Loc0, IsAccessible(||
+                Location(LocId::Loc0, IsAccessible(
                     |items| has_item(items, LabelledItem::Progression(Item::Item0)))),
-                Location(LocId::Loc1, IsAccessible(|| |items| {
+                Location(LocId::Loc1, IsAccessible(|items| {
                     has_item(items, LabelledItem::Progression(Item::Item0)) &&
                         has_item(items, LabelledItem::Progression(Item::Item1))
                 })),
-                Location(LocId::Loc2, IsAccessible(|| |_| true)),
-                Location(LocId::Loc3, IsAccessible(|| |_| true)),
-                Location(LocId::Loc4, IsAccessible(|| |_| true)),
-                Location(LocId::Loc5, IsAccessible(|| |_| true))
+                Location(LocId::Loc2, IsAccessible(|_| true)),
+                Location(LocId::Loc3, IsAccessible(|_| true)),
+                Location(LocId::Loc4, IsAccessible(|_| true)),
+                Location(LocId::Loc5, IsAccessible(|_| true))
             ];
 
             let prog_items: Vec<LabelledItem> = vec![

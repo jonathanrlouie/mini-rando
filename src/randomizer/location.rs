@@ -2,7 +2,7 @@ use super::item::{LabelledItem};
 use std::hash::{Hash, Hasher};
 use std::fmt;
 
-pub struct IsAccessible<F: Fn(&[LabelledItem]) -> bool>(pub fn() -> F);
+pub struct IsAccessible<F: Fn(&[LabelledItem]) -> bool>(pub F);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LocId {

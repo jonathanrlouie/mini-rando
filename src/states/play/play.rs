@@ -31,16 +31,16 @@ impl Play {
 
     fn generate_locations(&mut self) -> Option<Vec<FilledLocation>> {
         let locations: Vec<Location<fn(&[LabelledItem]) -> bool>> = vec![
-            Location(LocId::Loc0, IsAccessible(||
+            Location(LocId::Loc0, IsAccessible(
                 |items| has_item(items, LabelledItem::Progression(Item::Item0)))),
-            Location(LocId::Loc1, IsAccessible(|| |items| {
+            Location(LocId::Loc1, IsAccessible(|items| {
                 has_item(items, LabelledItem::Progression(Item::Item0)) &&
                     has_item(items, LabelledItem::Progression(Item::Item1))
             })),
-            Location(LocId::Loc2, IsAccessible(|| |_| true)),
-            Location(LocId::Loc3, IsAccessible(|| |_| true)),
-            Location(LocId::Loc4, IsAccessible(|| |_| true)),
-            Location(LocId::Loc5, IsAccessible(|| |_| true))
+            Location(LocId::Loc2, IsAccessible(|_| true)),
+            Location(LocId::Loc3, IsAccessible(|_| true)),
+            Location(LocId::Loc4, IsAccessible(|_| true)),
+            Location(LocId::Loc5, IsAccessible(|_| true))
         ];
 
         let prog_items: Vec<LabelledItem> = vec![
