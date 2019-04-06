@@ -41,9 +41,9 @@ pub mod fast_filler_args {
 
 }
 
-pub fn shuffle_and_fill(
+pub fn shuffle_and_fill<F: Fn(&[LabelledItem]) -> bool>(
     rng: &mut GameRng,
-    locations: Vec<Location>,
+    locations: Vec<Location<F>>,
     prog_items: Vec<LabelledItem>,
     junk_items: Vec<LabelledItem>
 ) -> Option<Vec<FilledLocation>> {
@@ -51,8 +51,8 @@ pub fn shuffle_and_fill(
     fill_locations(shuffled)
 }
 
-fn fill_locations(
-    shuffled: Shuffled
+fn fill_locations<F: Fn(&[LabelledItem]) -> bool>(
+    shuffled: Shuffled<F>
 ) -> Option<Vec<FilledLocation>> {
     let (locations, prog_items, other_items) = shuffled.get();
 
@@ -69,9 +69,9 @@ fn fill_locations(
     }
 }
 
-fn progression_filler(
+fn progression_filler<F: Fn(&[LabelledItem]) -> bool>(
     mut prog_items: Vec<LabelledItem>,
-    mut locations: Vec<Location>
+    mut locations: Vec<Location<F>>
 ) -> Option<ProgressionFillerResult> {
     let mut remaining_locations: LinkedHashSet<LocId> =
         LinkedHashSet::from_iter(locations
@@ -86,7 +86,7 @@ fn progression_filler(
         let item = prog_items.pop()?;
         locations = locations
             .into_iter()
-            .filter(|&Location(_, ref is_accessible)| is_accessible.0(&prog_items))
+            .filter(|&Location(_, ref is_accessible)| is_accessible.0()(&prog_items))
             .collect();
         let location = locations.pop()?;
         filled_locations.push(FilledLocation(item, location.0));
@@ -118,17 +118,17 @@ mod tests {
     #[test]
     fn filler_test() {
         for _ in 0..10 {
-            let locations: Vec<Location> = vec![
-                Location(LocId::Loc0, IsAccessible(Box::new(
-                    |items| has_item(items, LabelledItem::Progression(Item::Item0))))),
-                Location(LocId::Loc1, IsAccessible(Box::new(|items| {
+            let locations: Vec<Location<fn(&[LabelledItem]) -> bool>> = vec![
+                Location(LocId::Loc0, IsAccessible(||
+                    |items| has_item(items, LabelledItem::Progression(Item::Item0)))),
+                Location(LocId::Loc1, IsAccessible(|| |items| {
                     has_item(items, LabelledItem::Progression(Item::Item0)) &&
                         has_item(items, LabelledItem::Progression(Item::Item1))
-                }))),
-                Location(LocId::Loc2, IsAccessible(Box::new(|_| true))),
-                Location(LocId::Loc3, IsAccessible(Box::new(|_| true))),
-                Location(LocId::Loc4, IsAccessible(Box::new(|_| true))),
-                Location(LocId::Loc5, IsAccessible(Box::new(|_| true)))
+                })),
+                Location(LocId::Loc2, IsAccessible(|| |_| true)),
+                Location(LocId::Loc3, IsAccessible(|| |_| true)),
+                Location(LocId::Loc4, IsAccessible(|| |_| true)),
+                Location(LocId::Loc5, IsAccessible(|| |_| true))
             ];
 
             let prog_items: Vec<LabelledItem> = vec![

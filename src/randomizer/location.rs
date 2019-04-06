@@ -2,7 +2,7 @@ use super::item::{LabelledItem};
 use std::hash::{Hash, Hasher};
 use std::fmt;
 
-pub struct IsAccessible(pub Box<dyn Fn(&[LabelledItem]) -> bool>);
+pub struct IsAccessible<F: Fn(&[LabelledItem]) -> bool>(pub fn() -> F);
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, Hash)]
 pub enum LocId {
@@ -14,26 +14,26 @@ pub enum LocId {
     Loc5
 }
 
-pub struct Location(pub LocId, pub IsAccessible);
+pub struct Location<F: Fn(&[LabelledItem]) -> bool>(pub LocId, pub IsAccessible<F>);
 
-impl PartialEq for Location {
-    fn eq(&self, other: &Location) -> bool {
+impl<F: Fn(&[LabelledItem]) -> bool> PartialEq for Location<F> {
+    fn eq(&self, other: &Location<F>) -> bool {
         let &Location(loc_id, _) = self;
         let &Location(other_loc_id, _) = other;
         loc_id == other_loc_id
     }
 }
 
-impl Eq for Location {}
+impl<F: Fn(&[LabelledItem]) -> bool> Eq for Location<F> {}
 
-impl Hash for Location {
+impl<F: Fn(&[LabelledItem]) -> bool> Hash for Location<F> {
     fn hash<H: Hasher>(&self, state: &mut H) {
         let &Location(loc_id, _) = self;
         loc_id.hash(state);
     }
 }
 
-impl fmt::Debug for Location {
+impl<F: Fn(&[LabelledItem]) -> bool> fmt::Debug for Location<F> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         let &Location(loc_id, _) = self;
         write!(f, "Location {{ loc_id: {:?} }}", loc_id)
